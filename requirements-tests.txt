@@ -1,0 +1,6 @@
+sure
+pytest
+pytest-cov
+pytest-randomly
+pytest-mock
+pytest-testdox
