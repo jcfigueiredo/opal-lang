@@ -1,5 +1,5 @@
 from opal.ast import Integer, Add, Sub, Mul, Div
-from opal.lexer import lexer, pstate, lex
+from opal.evaluator import ASTVisitor
 from opal.parser import parser
 
 
@@ -9,7 +9,7 @@ def parse(expr, only_statements=True):
     :param expr: src code
     :return: Integer ast Node
     """
-    program = parser.parse(lex(expr), pstate)
+    program = ASTVisitor().transform(parser.parse(f'{expr}'))
     if only_statements:
         return program.block.statements
     return program

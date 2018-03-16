@@ -1,10 +1,10 @@
 from opal.ast import Program, Add, Integer, Block, Mul, LogicError
-from opal.lexer import pstate, lex
+from opal.evaluator import ASTVisitor
 from opal.parser import parser
 
 
-def parse(expr: str):
-    return parser.parse(lex(expr), pstate)
+def parse(expr):
+    return ASTVisitor().transform(parser.parse(f'{expr}'))
 
 
 class TestParsingExpressions:
@@ -14,7 +14,7 @@ class TestParsingExpressions:
 
     def test_is_included_in_the_program(self):
         prog = parse("1 + 1")
-        prog.block.statements.should.contain(Add(Integer(1), Integer(1)))
+        prog.block.statements[0].should.be.equal(Add(Integer(1), Integer(1)))
 
 
 class TestDumpingExpressions:

@@ -1,3 +1,4 @@
+-r requirements.txt
 sure
 pytest
 pytest-cov

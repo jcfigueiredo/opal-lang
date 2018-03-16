@@ -1,8 +1,8 @@
 program: block
 
-block: instruction+
+block: instruction  (term instruction)* (instruction term)*
 
-instruction: sum NEWLINE
+instruction: sum
 
 ?sum: product
     | sum "+" product   -> add
@@ -10,17 +10,21 @@ instruction: sum NEWLINE
 ?product: atom
     | product "*" atom  -> mul
     | product "/" atom  -> div
-?atom: NUMBER           -> number
+?atom: const
     | "(" sum ")"
 
-!_add_op: "+"|"-"
-!_mul_op: "*"|"@"|"/"|"%"|"//"
+// !_add_op: "+"|"-"
+// !_mul_op: "*"|"@"|"/"|"%"|"//"
 
-NUMBER: FLOAT | INT
+?const: float | int
+
+float: FLOAT
+int: INT
 
 INT: ["+"|"-"] DIGIT+
 FLOAT: ["+"|"-"] INT "." INT
 
+term: NEWLINE
 
 %import common.DIGIT
 %import common.NEWLINE

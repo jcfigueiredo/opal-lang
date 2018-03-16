@@ -144,10 +144,10 @@ class Value(ExprAST):
 
 class Integer(Value, types.Int):
     def __init__(self, val):
-        self.val = val
+        self.val = int(val)
 
 
 class Float(Value, types.Float):
     def __init__(self, val):
-        self.val = val
+        self.val = float(val)
 
