@@ -1,4 +1,6 @@
-from opal.ast import Program, Add, Integer, Block, Mul, LogicError
+from llvmlite import ir
+
+from opal.ast import Program, Add, Integer, Block, Mul, LogicError, Float
 from opal.evaluator import ASTVisitor
 from opal.parser import parser
 
@@ -87,6 +89,24 @@ class TestABlock:
         b1 = Block()
         # noinspection PyStatementEffect
         b1.statements.should.be.empty
+
+
+class TestIntegerNodes:
+    def test_cast_to_int_when_initialized_with_strings(self):
+        v1 = Integer('1')
+        v1.val.should.be.a(int)
+
+    def test_has_a_llvm_representation(self):
+        Integer.as_llvm.should.be.equal(ir.IntType(64))
+
+
+class TestFloatNodes:
+    def test_cast_to_int_when_initialized_with_strings(self):
+        v1 = Float('1.2')
+        v1.val.should.be.a(float)
+
+    def test_has_a_llvm_representation(self):
+        Float.as_llvm.should.be.equal(ir.FloatType())
 
 
 class TestValueNodes:
