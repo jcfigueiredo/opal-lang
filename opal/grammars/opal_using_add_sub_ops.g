@@ -1,8 +1,9 @@
 program: block
 
-block: instruction+
+block: instruction  (term instruction)* (instruction term)*
 
-instruction: sum NEWLINE
+instruction: sum
+
 
 ?sum: product
     | sum _add_op product   -> add_sub
@@ -14,11 +15,17 @@ instruction: sum NEWLINE
 !_add_op: "+"|"-"
 !_mul_op: "*"|"@"|"/"|"%"|"//"
 
-NUMBER: FLOAT | INT
+?const: float | int | string
+
+float: FLOAT
+int: INT
+string: STRING
 
 INT: ["+"|"-"] DIGIT+
 FLOAT: ["+"|"-"] INT "." INT
+STRING : /("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/i
 
+term: NEWLINE
 
 %import common.DIGIT
 %import common.NEWLINE
