@@ -151,3 +151,7 @@ class Float(Value, types.Float):
     def __init__(self, val):
         self.val = float(val)
 
+
+class String(Value, types.String):
+    def __init__(self, val):
+        self.val = val

@@ -1,4 +1,4 @@
-from opal.ast import Integer, Add, Sub, Mul, Div
+from opal.ast import Integer, Add, Sub, Mul, Div, String
 from opal.evaluator import ASTVisitor
 from opal.parser import parser
 
@@ -64,4 +64,9 @@ class TestTheParser:
 
         parse("5 * 2 - 3").should.contain(
             Sub(Mul(Integer(5), Integer(2)), Integer(3))
+        )
+
+    def test_supports_strings(self):
+        parse("'alpha' + 'beta'").should.contain(
+            Add(String('alpha'), String('beta'))
         )

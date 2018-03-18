@@ -1,6 +1,6 @@
 from llvmlite import ir
 
-from opal.ast import Program, Add, Integer, Block, Mul, LogicError, Float
+from opal.ast import Program, Add, Integer, Block, Mul, LogicError, Float, String
 from opal.evaluator import ASTVisitor
 from opal.parser import parser
 
@@ -14,9 +14,13 @@ class TestParsingExpressions:
         prog = parse("1 + 1")
         assert isinstance(prog, Program)
 
-    def test_is_included_in_the_program(self):
+    def test_has_a_block(self):
         prog = parse("1 + 1")
-        prog.block.statements[0].should.be.equal(Add(Integer(1), Integer(1)))
+        prog.block.should.equal(Block(Add(Integer(1), Integer(1))))
+
+    def test_has_a_block_with_expression(self):
+        prog = parse("1 + 1")
+        prog.block.statements.should.contain(Add(Integer(1), Integer(1)))
 
 
 class TestDumpingExpressions:
@@ -31,6 +35,10 @@ class TestDumpingExpressions:
     def test_works_for_float_consts(self):
         prog = parse("1.0")
         prog.dump().should.contain('(Block\n  (Float 1.0))')
+
+    def test_works_for_string_consts(self):
+        prog = parse("'andrea'")
+        prog.dump().should.contain('(Block\n  (String andrea))')
 
     def test_works_for_binops(self):
         prog = parse("1 + 2")
@@ -107,6 +115,15 @@ class TestFloatNodes:
 
     def test_has_a_llvm_representation(self):
         Float.as_llvm.should.be.equal(ir.FloatType())
+
+
+class TestStringNodes:
+    def test_cast_to_int_when_initialized_with_strings(self):
+        v1 = String("oie")
+        v1.val.should.be.a(str)
+
+    def test_has_a_llvm_representation(self):
+        String.as_llvm.should.be.equal(ir.IntType(8).as_pointer)
 
 
 class TestValueNodes:

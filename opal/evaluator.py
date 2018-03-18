@@ -1,8 +1,12 @@
+# noinspection PyPackageRequirements
+from ctypes import CFUNCTYPE, c_void_p
+
 from lark import InlineTransformer
+# noinspection PyPackageRequirements
 from lark.lexer import Token
 from llvmlite import binding as llvm
 
-from opal.ast import Program, Block, Add, Sub, Mul, Div, Integer, Float
+from opal.ast import Program, Block, Add, Sub, Mul, Div, Integer, Float, String
 from opal.codegen import LLVMCodeGenerator
 from opal.parser import parser
 
@@ -49,8 +53,11 @@ class ASTVisitor(InlineTransformer):
     def float(self, const):
         return Float(const.value)
 
+    def string(self, const):
+        return String(const.value[1:][:-1])
+
     def term(self, nl):
-        # newlines hanler
+        # newlines handler
         return None
 
 
@@ -63,14 +70,28 @@ class OpalEvaluator:
 
         self.codegen = LLVMCodeGenerator()
 
-        self.target = llvm.Target.from_default_triple()
+        # self.target = llvm.Target.from_triple("x86_64-apple-macosx10.12.0")
 
-    def execute(self, code):
+    def evaluate(self, code, print_ir=False):
         ast = ASTVisitor().transform(parser.parse(f'{code}'))
 
         self.codegen.generate_code(ast)
 
-        mod_ir = str(self.codegen.module)
-        mod_ir = mod_ir.replace("unknown-unknown-unknown", "x86_64-apple-macosx10.12.0")
+        module = self.codegen.module
 
-        return mod_ir
+        llvm_ir = str(module)
+
+        llvm_mod = llvm.parse_assembly(llvm_ir)
+
+        if print_ir:
+            print(llvm_ir)
+
+        llvm_mod.verify()
+
+        target_machine = llvm.Target.from_default_triple().create_target_machine()
+        with llvm.create_mcjit_compiler(llvm_mod, target_machine) as ee:
+            ee.finalize_object()
+            fptr = CFUNCTYPE(c_void_p)(ee.get_function_address('main'))
+
+            fptr()
+

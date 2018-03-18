@@ -1,7 +1,10 @@
 from llvmlite import ir as ir
 
 from opal import types
-from opal.ast import Program, Value, BinaryOp
+from opal.ast import Program, Value, BinaryOp, Integer
+
+# noinspection PyPep8Naming
+from opal import operations
 
 
 # noinspection PyPep8Naming
@@ -11,8 +14,6 @@ class LLVMCodeGenerator:
         self.blocks = []
         # Current IR builder.
         self.builder = ir.IRBuilder()
-
-        # self.func_symtab = {}
 
     def generate_code(self, node):
         assert isinstance(node, Program)
@@ -46,11 +47,13 @@ class LLVMCodeGenerator:
         }
 
         op = node.op
-        op_alias = ops.get(op)
-
         if op not in ops:
             raise NotImplementedError(f'The operation _{op}_ is nor support for Binary Operations.')
-        return self.builder.add(left, right, op_alias)
+
+        if left.type == Integer.as_llvm and right.type == Integer.as_llvm:
+            return operations.int_ops(self.builder, left, right, node)
+
+        return operations.float_ops(self.builder, left, right, node)
 
     # noinspection PyMethodMayBeStatic
     def _codegen_Block(self, node):
@@ -61,6 +64,7 @@ class LLVMCodeGenerator:
                 ret = temp
         return ret
 
+    # noinspection PyPep8Naming
     def _codegen_Program(self, node):
         func_type = ir.FunctionType(types.Int.as_llvm, [])
 

@@ -16,13 +16,15 @@ instruction: sum
 // !_add_op: "+"|"-"
 // !_mul_op: "*"|"@"|"/"|"%"|"//"
 
-?const: float | int
+?const: float | int | string
 
 float: FLOAT
 int: INT
+string: STRING
 
 INT: ["+"|"-"] DIGIT+
 FLOAT: ["+"|"-"] INT "." INT
+STRING : /("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/i
 
 term: NEWLINE
 

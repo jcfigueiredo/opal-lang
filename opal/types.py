@@ -26,6 +26,10 @@ class Int(Any):
 class Float(Any):
     _llvm_type = ir.FloatType()
 
+
+class String(Any):
+    _llvm_type = ir.IntType(8).as_pointer
+
 # type_map = {
 # 	ANY: ir.VoidType(),
 # 	BOOL: ir.IntType(1),
