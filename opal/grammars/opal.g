@@ -1,6 +1,6 @@
 program: block
 
-block: instruction  (term instruction)* (instruction term)*
+block: instruction (instruction term)*
 
 instruction: sum
 

@@ -1,5 +1,5 @@
 from opal.ast import Integer, Add, Sub, Mul, Div, String
-from opal.evaluator import ASTVisitor
+from opal.codegen import ASTVisitor
 from opal.parser import parser
 
 

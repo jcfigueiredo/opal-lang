@@ -1,7 +1,7 @@
 from llvmlite import ir
 
 from opal.ast import Program, Add, Integer, Block, Mul, LogicError, Float, String
-from opal.evaluator import ASTVisitor
+from opal.codegen import ASTVisitor
 from opal.parser import parser
 
 
