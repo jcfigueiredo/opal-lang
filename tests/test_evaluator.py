@@ -17,6 +17,29 @@ class TestEvaluator:
         expr = """
         3 + 4 * 6 + (4 / 2)
         """
+        ev = OpalEvaluator()
+        ev.evaluate(expr)
+
+    def test_adds_malloc_builtins(self):
+        ev = OpalEvaluator()
+        str(ev.codegen).should.contain('declare i8* @"malloc"(i32 %".1")')
+
+    def test_adds_free_builtins(self):
+        ev = OpalEvaluator()
+        str(ev.codegen).should.contain('declare void @"free"(i8* %".1")')
+
+    def test_adds_puts_builtins(self):
+        ev = OpalEvaluator()
+        str(ev.codegen).should.contain('declare i32 @"puts"(i8* %".1")')
+
+    def test_works_for_strings(self):
+        opal_string = 'something something complete..'
+
+        expr = f"""'{opal_string}'
+        """
         print(expr)
         ev = OpalEvaluator()
         ev.evaluate(expr, print_ir=True)
+
+        global_str_constant = r'@"str_\d+" = internal constant \[31 x i8\] c"%s\\00"' % opal_string
+        str(ev.codegen).should.match(global_str_constant)

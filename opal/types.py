@@ -20,7 +20,11 @@ class Any(metaclass=MetaType):
 
 
 class Int(Any):
-    _llvm_type = ir.IntType(64)
+    _llvm_type = ir.IntType(32)
+
+
+class Int8(Any):
+    _llvm_type = ir.IntType(8)
 
 
 class Float(Any):

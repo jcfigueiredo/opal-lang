@@ -24,7 +24,7 @@ class TestProgram:
             block.should.have.property('statements').which.should.be.a(list)
 
     def test_supports_multiple_lines(self):
-        parse("1 - 1\n2 * 3", only_statements=False).block.statements.should.be.equal(
+        parse("1 - 1\n2 * 3\n", only_statements=False).block.statements.should.be.equal(
             [
                 Sub(Integer(1), Integer(1)),
                 Mul(Integer(2), Integer(3)),

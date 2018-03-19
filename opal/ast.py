@@ -142,7 +142,16 @@ class Value(ExprAST):
         return f'({self.__class__.__name__} {self.val})'
 
 
+class Void(types.Any):
+    pass
+
+
 class Integer(Value, types.Int):
+    def __init__(self, val):
+        self.val = int(val)
+
+
+class Int8(Value, types.Int8):
     def __init__(self, val):
         self.val = int(val)
 

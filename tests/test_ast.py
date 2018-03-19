@@ -55,7 +55,7 @@ class TestDumpingExpressions:
         prog.dump().should.contain('(- (/ (* 10 2) 3) 1)')
 
     def test_works_for_multi_line(self):
-        prog = parse("1 * 2\n4 + 3\n2 - 1 + 4 * 2")
+        prog = parse("1 * 2\n4 + 3\n2 - 1 + 4 * 2\n")
         prog.dump().should.contain('(* 1 2)\n(+ 4 3)\n(+ (- 2 1) (* 4 2))')
 
 
@@ -105,7 +105,7 @@ class TestIntegerNodes:
         v1.val.should.be.a(int)
 
     def test_has_a_llvm_representation(self):
-        Integer.as_llvm.should.be.equal(ir.IntType(64))
+        Integer.as_llvm.should.be.equal(ir.IntType(32))
 
 
 class TestFloatNodes:
