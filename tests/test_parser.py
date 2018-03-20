@@ -1,4 +1,4 @@
-from opal.ast import Integer, Add, Sub, Mul, Div, String
+from opal.ast import Integer, Add, Sub, Mul, Div, String, Print, Float
 from opal.codegen import ASTVisitor
 from opal.parser import parser
 
@@ -6,6 +6,7 @@ from opal.parser import parser
 def parse(expr, only_statements=True):
     """
     Process some src code and returns the first statement of the Program
+    :param only_statements: Boolean.
     :param expr: src code
     :return: Integer ast Node
     """
@@ -70,3 +71,24 @@ class TestTheParser:
         parse("'alpha' + 'beta'").should.contain(
             Add(String('alpha'), String('beta'))
         )
+
+
+class TestPrint:
+    def test_strings(self):
+        string = "howdy ho"
+        parse(f'print(\'{string}\')').should.contain(Print(String(string)))
+
+    def test_int(self):
+        integer = 42
+        parse(f'print({integer})').should.contain(Print(Integer(integer)))
+
+    def test_float(self):
+        float_ = 0.42
+        parse(f'print({float_})').should.contain(Print(Float(float_)))
+
+    def test_expr(self):
+        parse(f'print(2 / 3 - 1)').should.contain(Print(Sub(Div(Integer(2), Integer(3)), Integer(1))))
+
+    def test_expr_with_parenthesis(self):
+        parse(f'print(2 / (3 - 1))').should.contain(Print(Div(Integer(2), Sub(Integer(3), Integer(1)))))
+

@@ -2,10 +2,10 @@ from lark import InlineTransformer
 from lark.lexer import Token
 from llvmlite import binding as llvm
 from llvmlite import ir as ir
-from llvmlite.llvmpy.core import Constant, LINKAGE_INTERNAL, Module, Function
+from llvmlite.llvmpy.core import Constant, LINKAGE_INTERNAL, Module, Function, Builder
 
 from opal import operations
-from opal.ast import Program, BinaryOp, Integer, Block, Add, Sub, Mul, Div, Float, String
+from opal.ast import Program, BinaryOp, Integer, Block, Add, Sub, Mul, Div, Float, String, Print
 from opal.types import Int8, Any
 
 PRIVATE_LINKAGE = 'private'
@@ -25,7 +25,7 @@ class CodeGenerator:
 
         self.current_function = func
         self.function_stack = [func]
-        self.builder = ir.IRBuilder(entry_block)
+        self.builder = Builder(entry_block)
         self.exit_blocks = [exit_block]
         self.block_stack = [entry_block]
 
@@ -77,7 +77,6 @@ class CodeGenerator:
         return getattr(self, method, self.generic_codegen)(node)
 
     def insert_const_string(self, string):
-
         text = Constant.stringz(string)
         name = self.get_string_name(string)
         # Try to reuse existing global
@@ -90,9 +89,7 @@ class CodeGenerator:
             gv.global_constant = True
             gv.initializer = text
 
-        # Cast to a i8* pointer
-        char_ty = gv.type.pointee.element
-        return Constant.bitcast(gv, char_ty.as_pointer())
+        return gv
 
     @staticmethod
     def get_string_name(string):
@@ -100,6 +97,41 @@ class CodeGenerator:
 
     def _codegen_string(self, node):
         return self.insert_const_string(node.val)
+
+    def _codegen_print(self, node):
+        if isinstance(node.val, String):
+
+            stringz = self.insert_const_string(node.val.val)
+            # Cast to a i8* pointer
+            char_ty = stringz.type.pointee.element
+            str_ptr = self.builder.bitcast(stringz, char_ty.as_pointer())
+
+            self.call('puts', [str_ptr])
+            return
+
+        raise NotImplementedError(f'can\'t print {node.val}')
+
+    def call(self, name, args):
+        if isinstance(name, str):
+            func = self.module.get_global(name)
+        else:
+            func = self.module.get_global(name.name)
+        if func is None:
+            raise TypeError('Calling non existant function')
+        return self.builder.call(func, args)
+
+    # def alloc_and_store(self, val, typ, name=''):
+    #     var_addr = self.builder.alloca(typ, name=name)
+    #     self.builder.store(val, var_addr)
+    #     return var_addr
+
+    def gep(self, ptr, indices, inbounds=False, name=''):
+        return self.builder.gep(ptr, indices, inbounds, name)
+
+    def const(self, val):
+        if isinstance(val, int):
+            return ir.Constant(Integer.as_llvm, val)
+        raise NotImplementedError
 
     def _codegen_binop(self, node):
         left = self._codegen(node.lhs)
@@ -155,6 +187,9 @@ class ASTVisitor(InlineTransformer):
         if isinstance(a, Token):
             return None
         return a
+
+    def print(self, expr):
+        return Print(expr)
 
     def add(self, lhs, rhs):
         return Add(lhs, rhs)

@@ -1,6 +1,6 @@
 from llvmlite import ir
 
-from opal.ast import Program, Add, Integer, Block, Mul, LogicError, Float, String
+from opal.ast import Program, Add, Integer, Block, Mul, LogicError, Float, String, Print
 from opal.codegen import ASTVisitor
 from opal.parser import parser
 
@@ -107,6 +107,10 @@ class TestIntegerNodes:
     def test_has_a_llvm_representation(self):
         Integer.as_llvm.should.be.equal(ir.IntType(32))
 
+    def test_can_be_compared(self):
+        Integer(1).should.be.equal(Integer(1))
+        Integer(1).should_not.be.equal(Integer(2))
+
 
 class TestFloatNodes:
     def test_cast_to_int_when_initialized_with_strings(self):
@@ -116,6 +120,10 @@ class TestFloatNodes:
     def test_has_a_llvm_representation(self):
         Float.as_llvm.should.be.equal(ir.FloatType())
 
+    def test_can_be_compared(self):
+        Float(10.135).should.be.equal(Float(10.135))
+        Float(10.135).should_not.be.equal(Float(101.35))
+
 
 class TestStringNodes:
     def test_cast_to_int_when_initialized_with_strings(self):
@@ -124,6 +132,12 @@ class TestStringNodes:
 
     def test_has_a_llvm_representation(self):
         String.as_llvm.should.be.equal(ir.IntType(8).as_pointer)
+
+
+class TestPrintNodes:
+    def test_can_be_compared(self):
+        Print(Integer(10)).should.be.equal(Print(Integer(10)))
+        Print(Integer(10)).should_not.be.equal(Print(Integer(11)))
 
 
 class TestValueNodes:
@@ -136,6 +150,10 @@ class TestValueNodes:
 
         # noinspection PyUnresolvedReferences
         v1.__eq__.when.called_with(add).should.throw(LogicError, expected_message)
+
+    def test_distinguish_by_type(self):
+        Integer(1).should_not.be.equal(Float(1.0))
+        Float(1.0).should_not.be.equal(Integer(1))
 
 
 class TestBinaryOperationNodes:

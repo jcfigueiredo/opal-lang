@@ -4,7 +4,9 @@ block: instruction (instruction term)*
 
 instruction: sum
 
-?sum: product
+
+?sum: "print" "(" sum ")" -> print
+    | product
     | sum "+" product   -> add
     | sum "-" product   -> sub
 ?product: atom

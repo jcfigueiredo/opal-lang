@@ -136,10 +136,31 @@ class Value(ExprAST):
             raise LogicError(f'You can\'t compare a Value and {o.__class__.__name__}.'
                              f'\nTokens being compared:\n{self.dump()}\n{other_val}')
         # noinspection PyUnresolvedReferences
+        if self.__class__ != o.__class__:
+            return False
+
         return self.val == o.val
+
+    def __ne__(self, o):
+        return not self.__eq__(o)
 
     def dump(self):
         return f'({self.__class__.__name__} {self.val})'
+
+
+class Print(Value, types.Any):
+
+    def __init__(self, expr):
+        self.val = expr
+
+    def __eq__(self, o):
+        return self.val == o.val
+
+    def __ne__(self, o):
+        return not self.__eq__(o)
+
+    def dump(self):
+        return f'({self.__class__.__name__} {self.val.dump()})'
 
 
 class Void(types.Any):

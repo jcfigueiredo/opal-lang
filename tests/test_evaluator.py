@@ -37,9 +37,21 @@ class TestEvaluator:
 
         expr = f"""'{opal_string}'
         """
-        print(expr)
         ev = OpalEvaluator()
-        ev.evaluate(expr, print_ir=True)
+        ev.evaluate(expr)
 
         global_str_constant = r'@"str_\d+" = private unnamed_addr constant \[31 x i8\] c"%s\\00"' % opal_string
         str(ev.codegen).should.match(global_str_constant)
+
+    def test_works_for_printing_strings(self):
+        expr = f"""print('something something complete..')
+        """
+        print(expr)
+        ev = OpalEvaluator()
+        ev.evaluate(expr)
+
+        global_str_constant = r'@"str_\d+" = private unnamed_addr constant \[31 x i8\] c"%s\\00"' % \
+                              'something something complete..'
+        str(ev.codegen).should.match(global_str_constant)
+        str(ev.codegen).should.contain('%".3" = call i32 @"puts"(i8* %".2")')
+

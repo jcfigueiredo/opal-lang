@@ -10,54 +10,6 @@ import opal
 from opal.ast import Block, Program, Float, Integer, Add, Div, Mul, Sub, String
 
 
-# noinspection PyMethodMayBeStatic
-class ASTVisitor(InlineTransformer):
-    def program(self, body):
-        if isinstance(body, Block):
-            program = Program(body)
-        else:
-            program = Program(Block([body]))
-
-        return program
-
-    def block(self, *args):
-        return Block([arg for arg in args if arg])
-
-    # noinspection PyUnusedLocal
-    def instruction(self, a, b=None):
-        if isinstance(a, Token):
-            return None
-        return a
-
-    def number(self, number):
-        return number
-
-    def add(self, lhs, rhs):
-        return Add(lhs, rhs)
-
-    def sub(self, lhs, rhs):
-        return Sub(lhs, rhs)
-
-    def mul(self, lhs, rhs):
-        return Mul(lhs, rhs)
-
-    def div(self, lhs, rhs):
-        return Div(lhs, rhs)
-
-    def int(self, const):
-        return Integer(const.value)
-
-    def float(self, const):
-        return Float(const.value)
-
-    def string(self, const):
-        return String(const.value[1:][:-1])
-
-    def term(self, nl):
-        # newlines hanler
-        return None
-
-
 # from lark.tree import pydot__tree_to_png  # Just a neat utility function
 # pydot__tree_to_png(res, "opal-grammar.png")
 
@@ -144,4 +96,36 @@ class TestLarkParser:
         res = self.parsed_representation(prog)
 
         res.should.equal('program block instruction add float 22.3 float 5.67')
+
+    def test_print_string(self):
+        expr = "print('hi ho')"
+
+        prog = self.get_parser().parse(expr)
+        res = self.parsed_representation(prog)
+
+        res.should.equal('program block instruction print string \'hi ho\'')
+
+    def test_print_integer(self):
+        expr = "print(1)"
+
+        prog = self.get_parser().parse(expr)
+        res = self.parsed_representation(prog)
+
+        res.should.equal('program block instruction print int 1')
+
+    def test_print_float(self):
+        expr = "print(1.2)"
+
+        prog = self.get_parser().parse(expr)
+        res = self.parsed_representation(prog)
+
+        res.should.equal('program block instruction print float 1.2')
+
+    def test_print_expressions(self):
+        expr = "print(1 + 2 * 3)"
+
+        prog = self.get_parser().parse(expr)
+        res = self.parsed_representation(prog)
+
+        res.should.equal('program block instruction print add int 1 mul int 2 int 3')
 
