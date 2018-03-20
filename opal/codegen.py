@@ -79,7 +79,7 @@ class CodeGenerator:
     def insert_const_string(self, string):
 
         text = Constant.stringz(string)
-        name = '_'.join(['str', str(id(string))])
+        name = self.get_string_name(string)
         # Try to reuse existing global
         gv = self.module.globals.get(name)
         if gv is None:
@@ -93,6 +93,10 @@ class CodeGenerator:
         # Cast to a i8* pointer
         char_ty = gv.type.pointee.element
         return Constant.bitcast(gv, char_ty.as_pointer())
+
+    @staticmethod
+    def get_string_name(string):
+        return '_'.join(['str', str(id(string))])
 
     def _codegen_string(self, node):
         return self.insert_const_string(node.val)
