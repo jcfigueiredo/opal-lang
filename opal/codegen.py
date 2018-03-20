@@ -2,11 +2,14 @@ from lark import InlineTransformer
 from lark.lexer import Token
 from llvmlite import binding as llvm
 from llvmlite import ir as ir
-from llvmlite.llvmpy.core import Constant, LINKAGE_INTERNAL, Module
+from llvmlite.llvmpy.core import Constant, LINKAGE_INTERNAL, Module, Function
 
 from opal import operations
 from opal.ast import Program, BinaryOp, Integer, Block, Add, Sub, Mul, Div, Float, String
 from opal.types import Int8, Any
+
+PRIVATE_LINKAGE = 'private'
+
 
 class CodeGenerator:
     def __init__(self):
@@ -16,7 +19,7 @@ class CodeGenerator:
         self._add_builtins()
 
         func_ty = ir.FunctionType(ir.VoidType(), [])
-        func = ir.Function(self.module, func_ty, 'main')
+        func = Function(self.module, func_ty, 'main')
         entry_block = func.append_basic_block('entry')
         exit_block = func.append_basic_block('exit')
 
@@ -82,14 +85,14 @@ class CodeGenerator:
         if gv is None:
             # Not defined yet
             gv = self.builder.module.add_global_variable(text.type, name=name)
-            gv.linkage = LINKAGE_INTERNAL
+            gv.linkage = PRIVATE_LINKAGE
+            gv.unnamed_addr = True
             gv.global_constant = True
             gv.initializer = text
 
         # Cast to a i8* pointer
         char_ty = gv.type.pointee.element
-        return Constant.bitcast(gv,
-                                char_ty.as_pointer())
+        return Constant.bitcast(gv, char_ty.as_pointer())
 
     def _codegen_string(self, node):
         return self.insert_const_string(node.val)

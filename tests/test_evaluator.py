@@ -41,5 +41,5 @@ class TestEvaluator:
         ev = OpalEvaluator()
         ev.evaluate(expr, print_ir=True)
 
-        global_str_constant = r'@"str_\d+" = internal constant \[31 x i8\] c"%s\\00"' % opal_string
+        global_str_constant = r'@"str_\d+" = private unnamed_addr constant \[31 x i8\] c"%s\\00"' % opal_string
         str(ev.codegen).should.match(global_str_constant)
