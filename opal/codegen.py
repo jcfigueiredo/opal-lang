@@ -1,3 +1,5 @@
+from hashlib import sha3_256
+
 from lark import InlineTransformer
 from lark.lexer import Token
 from llvmlite import binding as llvm
@@ -52,29 +54,13 @@ class CodeGenerator:
 
     @staticmethod
     def generic_codegen(node):
-        raise Exception('No _codegen_{} method'.format(type(node).__name__.lower()))
+        raise Exception('No visit_{} method'.format(type(node).__name__.lower()))
 
     def branch(self, block):
         self.builder.branch(block)
 
     def position_at_end(self, block):
         self.builder.position_at_end(block)
-
-    def _codegen(self, node):
-        """
-        Dynamically invoke the code generator for each specific node
-        :param node: ASTNode
-        """
-
-        if isinstance(node, Integer) or isinstance(node, Float):
-            return self._codegen_value(node)
-
-        if isinstance(node, BinaryOp):
-            return self._codegen_binop(node)
-
-        method = '_codegen_' + type(node).__name__.lower()
-
-        return getattr(self, method, self.generic_codegen)(node)
 
     def insert_const_string(self, string):
         text = Constant.stringz(string)
@@ -91,16 +77,52 @@ class CodeGenerator:
 
         return gv
 
+    def _codegen(self, node):
+        """
+        Dynamically invoke the code generator for each specific node
+        :param node: ASTNode
+        """
+
+        if isinstance(node, Integer) or isinstance(node, Float):
+            return self.visit_value(node)
+
+        if isinstance(node, BinaryOp):
+            return self.visit_binop(node)
+
+        method = 'visit_' + type(node).__name__.lower()
+
+        return getattr(self, method, self.generic_codegen)(node)
+
     @staticmethod
     def get_string_name(string):
-        return '_'.join(['str', str(id(string))])
+        m = sha3_256()
+        m.update(string.encode('utf-8'))
 
-    def _codegen_string(self, node):
+        return '_'.join(['str', str(m.hexdigest())])
+
+    def call(self, name, args):
+        if isinstance(name, str):
+            func = self.module.get_global(name)
+        else:
+            func = self.module.get_global(name.name)
+        if func is None:
+            raise TypeError('Calling non existing function')
+        return self.builder.call(func, args)
+
+    def const(self, val):
+        if isinstance(val, int):
+            return ir.Constant(Integer.as_llvm, val)
+        if isinstance(val, float):
+            return ir.Constant(Float.as_llvm, val)
+
+        raise NotImplementedError
+
+    def visit_string(self, node):
         return self.insert_const_string(node.val)
 
-    def _codegen_print(self, node):
-        if isinstance(node.val, String):
+    def visit_print(self, node):
 
+        if isinstance(node.val, String):
             stringz = self.insert_const_string(node.val.val)
             # Cast to a i8* pointer
             char_ty = stringz.type.pointee.element
@@ -111,29 +133,7 @@ class CodeGenerator:
 
         raise NotImplementedError(f'can\'t print {node.val}')
 
-    def call(self, name, args):
-        if isinstance(name, str):
-            func = self.module.get_global(name)
-        else:
-            func = self.module.get_global(name.name)
-        if func is None:
-            raise TypeError('Calling non existant function')
-        return self.builder.call(func, args)
-
-    # def alloc_and_store(self, val, typ, name=''):
-    #     var_addr = self.builder.alloca(typ, name=name)
-    #     self.builder.store(val, var_addr)
-    #     return var_addr
-
-    def gep(self, ptr, indices, inbounds=False, name=''):
-        return self.builder.gep(ptr, indices, inbounds, name)
-
-    def const(self, val):
-        if isinstance(val, int):
-            return ir.Constant(Integer.as_llvm, val)
-        raise NotImplementedError
-
-    def _codegen_binop(self, node):
+    def visit_binop(self, node):
         left = self._codegen(node.lhs)
         right = self._codegen(node.rhs)
 
@@ -149,7 +149,7 @@ class CodeGenerator:
         return operations.float_ops(self.builder, left, right, node)
 
     # noinspection PyMethodMayBeStatic
-    def _codegen_block(self, node):
+    def visit_block(self, node):
         ret = None
         for stmt in node.statements:
             temp = self._codegen(stmt)
@@ -158,15 +158,15 @@ class CodeGenerator:
         return ret
 
     # noinspection PyPep8Naming
-    def _codegen_program(self, node):
+    def visit_program(self, node):
         self._codegen(node.block)
         self.branch(self.exit_blocks[0])
         self.position_at_end(self.exit_blocks[0])
         self.builder.ret_void()
 
     # noinspection PyMethodMayBeStatic
-    def _codegen_value(self, node):
-        return ir.Constant(node.__class__.as_llvm, node.val)
+    def visit_value(self, node):
+        return self.const(node.val)
 
 
 # noinspection PyMethodMayBeStatic
