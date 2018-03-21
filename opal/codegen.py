@@ -4,7 +4,7 @@ from lark import InlineTransformer
 from lark.lexer import Token
 from llvmlite import binding as llvm
 from llvmlite import ir as ir
-from llvmlite.llvmpy.core import Constant, LINKAGE_INTERNAL, Module, Function, Builder
+from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
 from opal import operations
 from opal.ast import Program, BinaryOp, Integer, Block, Add, Sub, Mul, Div, Float, String, Print
@@ -19,6 +19,7 @@ class CodeGenerator:
         self.blocks = []
 
         self._add_builtins()
+        # self._add_externals()
 
         func_ty = ir.FunctionType(ir.VoidType(), [])
         func = Function(self.module, func_ty, 'main')
@@ -212,6 +213,7 @@ class ASTVisitor(InlineTransformer):
     def string(self, const):
         return String(const.value[1:][:-1])
 
+    # noinspection PyUnusedLocal
     def term(self, nl):
         # newlines handler
         return None
