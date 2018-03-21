@@ -51,11 +51,12 @@ class OpalEvaluator:
             llvm_mod.link_in(mod)
 
         if print_ir:
-            print(llvm_ir)
+            print(llvm_mod)
 
         llvm_mod.verify()
 
         target_machine = llvm.Target.from_default_triple().create_target_machine()
+
         with llvm.create_mcjit_compiler(llvm_mod, target_machine) as ee:
 
             ee.finalize_object()
