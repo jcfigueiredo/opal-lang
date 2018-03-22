@@ -12,15 +12,12 @@ from opal.ast import Block, Program, Float, Integer, Add, Div, Mul, Sub, String
 
 # from lark.tree import pydot__tree_to_png  # Just a neat utility function
 # pydot__tree_to_png(res, "opal-grammar.png")
+from opal.parser import parser
 
 
 class TestLarkParser:
-    def get_parser(self):
-        opal_path = os.path.dirname(opal.__file__)
-        grammar_file_path = os.path.join(opal_path, 'grammars', 'opal.g')
-
-        with open(grammar_file_path, 'r') as f:
-            parser = Lark(f.read(), debug=True, start='program', ambiguity='resolve')
+    @staticmethod
+    def get_parser():
         return parser
 
     @staticmethod
@@ -58,9 +55,6 @@ class TestLarkParser:
         """
 
         res = self.get_parser().parse(expr)
-        # print(res.pretty())
-        # print(GenerateAST().transform(res))
-        # print(GenerateAST().transform(res).dump())
 
     def test_single_statement(self):
         expr = """
@@ -129,3 +123,14 @@ class TestLarkParser:
 
         res.should.equal('program block instruction print add int 1 mul int 2 int 3')
 
+    def test_sum_larger_than_nine(self):
+        expr = """
+        10 / 2
+        """
+
+        prog = self.get_parser().parse(expr)
+        res = self.parsed_representation(prog)
+
+        print(prog.pretty())
+
+        res.should.equal('program block instruction div int 10 int 2')

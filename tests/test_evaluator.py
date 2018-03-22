@@ -1,7 +1,7 @@
 import re
 
+from opal.codegen import CodeGenerator
 from opal.evaluator import OpalEvaluator
-from opal.codegen import llvm, CodeGenerator
 
 
 def get_string_name(string):
@@ -9,7 +9,6 @@ def get_string_name(string):
 
 
 class TestEvaluator:
-
 
     def test_works_when_adding_integers(self):
         for expr in ['3 - 4', '3 + 4', '3 * 4', '3 / 4']:
@@ -89,7 +88,19 @@ class TestEvaluator:
         ev = OpalEvaluator()
         ev.evaluate(expr)
 
-        # import ipdb; ipdb.set_trace();
-        #
         const_string_declaration_regex = r'(@"str_[0-9a-fA-F]+" =)'
         re.findall(const_string_declaration_regex, str(ev.codegen), flags=re.MULTILINE).should.have.length_of(1)
+
+
+class TestRegression:
+    def test_simple_division(self):
+        """
+        Wrong configuration on Lark lead to parser ambiguity errors
+        """
+        expr = """
+        10 / 2
+        """
+
+        ev = OpalEvaluator()
+
+        ev.evaluate(expr)

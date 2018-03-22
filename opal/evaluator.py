@@ -36,7 +36,7 @@ class OpalEvaluator:
         return mods
 
     def evaluate(self, code, print_ir=False):
-        ast = ASTVisitor().transform(parser.parse(f'{code}'))
+        ast = ASTVisitor().transform(parser.parse(code))
 
         self.codegen.generate_code(ast)
 
