@@ -18,10 +18,10 @@ class OpalEvaluator:
 
     def __init__(self):
         self.codegen = CodeGenerator()
+        self.llvm_mod = None
 
-        # self.target = llvm.Target.from_triple("x86_64-apple-macosx10.12.0")
+        # noinspection PyMethodMayBeStatic
 
-    # noinspection PyMethodMayBeStatic
     def _get_external_modules(self):
 
         clib_files_pattern = path.abspath(path.join(path.dirname(path.realpath(opal.__file__)), '../llvm_ir', '*.ll'))
@@ -44,20 +44,20 @@ class OpalEvaluator:
 
         llvm_ir = str(module)
 
-        llvm_mod = llvm.parse_assembly(llvm_ir)
+        self.llvm_mod = llvm.parse_assembly(llvm_ir)
 
         external_modules = self._get_external_modules()
         for mod in external_modules:
-            llvm_mod.link_in(mod)
+            self.llvm_mod.link_in(mod)
+
+        self.llvm_mod.verify()
 
         if print_ir:
-            print(llvm_mod)
-
-        llvm_mod.verify()
+            print(self.llvm_mod)
 
         target_machine = llvm.Target.from_default_triple().create_target_machine()
 
-        with llvm.create_mcjit_compiler(llvm_mod, target_machine) as ee:
+        with llvm.create_mcjit_compiler(self.llvm_mod, target_machine) as ee:
 
             ee.finalize_object()
             ee.run_static_constructors()

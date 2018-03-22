@@ -4,7 +4,13 @@ from opal.evaluator import OpalEvaluator
 from opal.codegen import llvm, CodeGenerator
 
 
+def get_string_name(string):
+    return CodeGenerator.get_string_name(string)
+
+
 class TestEvaluator:
+
+
     def test_works_when_adding_integers(self):
         for expr in ['3 - 4', '3 + 4', '3 * 4', '3 / 4']:
             ev = OpalEvaluator()
@@ -43,22 +49,26 @@ class TestEvaluator:
         ev.evaluate(expr)
 
         global_str_constant = r'@"str_[0-9a-fA-F]+" = private unnamed_addr constant \[31 x i8\] c"%s\\00"' % opal_string
+
         str(ev.codegen).should.match(global_str_constant)
 
     def test_works_for_printing_strings(self):
-        expr = f"""print('something something complete..')
-        """
+        something_complete = f"""printing string"""
+        expr = f"""print('%s')
+        """ % something_complete
+
         ev = OpalEvaluator()
         ev.evaluate(expr)
 
-        global_str_constant = r'@"str_[0-9a-fA-F]+" = private unnamed_addr constant \[31 x i8\] c"%s\\00"' % \
-                              'something something complete..'
+        global_str_constant = \
+            fr'@"str_[0-9a-fA-F]+" = private unnamed_addr constant \[16 x i8\] c"{something_complete}\\00"'
+
         str(ev.codegen).should.match(global_str_constant)
         str(ev.codegen).should.contain('%".3" = call i32 @"puts"(i8* %".2")')
 
     def test_works_for_printing_multiple_strings(self):
-        str1 = f"something sort of, more than, totally incomplete.."
-        str2 = f"something something complete.."
+        str1 = f"something"
+        str2 = f"something different"
 
         expr = f"""print('%s')
         print('%s')
@@ -70,7 +80,7 @@ class TestEvaluator:
         str(ev.codegen).should.contain(CodeGenerator.get_string_name(str2))
 
     def test_printing_same_string_twice_just_creates_one_constant(self):
-        str1 = f"something happened twice"
+        str1 = f"same thing printed twice"
 
         expr = f"""
         print('{str1}')
@@ -79,5 +89,7 @@ class TestEvaluator:
         ev = OpalEvaluator()
         ev.evaluate(expr)
 
+        # import ipdb; ipdb.set_trace();
+        #
         const_string_declaration_regex = r'(@"str_[0-9a-fA-F]+" =)'
         re.findall(const_string_declaration_regex, str(ev.codegen), flags=re.MULTILINE).should.have.length_of(1)
