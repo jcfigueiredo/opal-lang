@@ -54,6 +54,10 @@ class TestBuiltins:
         ev = OpalEvaluator()
         str(ev.codegen).should.contain('declare i32 @"puts"(i8* %".1")')
 
+    def test_includes_int_to_string_function(self):
+        ev = OpalEvaluator()
+        str(ev.codegen).should.contain('declare i8* @"int_to_string"(i32 %".1", i8* %".2", i32 %".3")')
+
 
 class TestExternal:
     def test_includes_int_to_c_function(self):
@@ -77,6 +81,15 @@ class TestPrinting:
 
         str(ev.codegen).should.match(global_str_constant)
         str(ev.codegen).should.contain('%".3" = call i32 @"puts"(i8* %".2")')
+
+    def test_works_for_integers(self):
+        expr = f"print(432234)"
+
+        ev = OpalEvaluator()
+        ev.evaluate(expr)
+
+        str(ev.codegen).should.match(r'call i8\* @"int_to_string"')
+        str(ev.codegen).should.match(r'call i32 @"puts"\(i8\* %".6"\)')
 
     def test_works_for_multiple_strings(self):
         str1 = f"something"

@@ -49,9 +49,24 @@ class CodeGenerator:
         puts_ty = ir.FunctionType(Integer.as_llvm, [Int8.as_llvm.as_pointer()])
         ir.Function(self.module, puts_ty, 'puts')
 
+        int_to_string_ty = ir.FunctionType(Int8.as_llvm.as_pointer(), [Integer.as_llvm, Int8.as_llvm.as_pointer(),
+                                                                       Integer.as_llvm])
+        ir.Function(self.module, int_to_string_ty, 'int_to_string')
+
     def generate_code(self, node):
         assert isinstance(node, Program)
         return self._codegen(node)
+
+    def alloc_and_store(self, val, typ, name=''):
+        var_addr = self.builder.alloca(typ, name=name)
+        self.builder.store(val, var_addr)
+        return var_addr
+
+    def load(self, name):
+        return self.builder.load(name)
+
+    def gep(self, ptr, indices, inbounds=False, name=''):
+        return self.builder.gep(ptr, indices, inbounds, name)
 
     @staticmethod
     def generic_codegen(node):
@@ -130,6 +145,21 @@ class CodeGenerator:
             str_ptr = self.builder.bitcast(stringz, char_ty.as_pointer())
 
             self.call('puts', [str_ptr])
+            return
+
+        if isinstance(node.val, Integer):
+            val = node.val.val
+            number = self.alloc_and_store(self.const(val), Integer.as_llvm)
+            number_ptr = self.load(number)
+
+            buffer = self.builder.alloca(ir.ArrayType(Int8.as_llvm, 10))
+
+            buffer_ptr = self.gep(buffer, [self.const(0), self.const(0)], inbounds=True)
+
+            self.call('int_to_string', [number_ptr, buffer_ptr, (self.const(10))])
+
+            self.call('puts', [buffer_ptr])
+
             return
 
         raise NotImplementedError(f'can\'t print {node.val}')
