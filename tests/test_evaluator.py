@@ -8,8 +8,7 @@ def get_string_name(string):
     return CodeGenerator.get_string_name(string)
 
 
-class TestEvaluator:
-
+class TestMath:
     def test_works_when_adding_integers(self):
         for expr in ['3 - 4', '3 + 4', '3 * 4', '3 / 4']:
             ev = OpalEvaluator()
@@ -20,24 +19,14 @@ class TestEvaluator:
             ev = OpalEvaluator()
             ev.evaluate(expr)
 
+
+class TestParser:
     def test_works_for_multi_line(self):
         expr = """
         3 + 4 * 6 + (4 / 2)
         """
         ev = OpalEvaluator()
         ev.evaluate(expr)
-
-    def test_adds_malloc_builtins(self):
-        ev = OpalEvaluator()
-        str(ev.codegen).should.contain('declare i8* @"malloc"(i32 %".1")')
-
-    def test_adds_free_builtins(self):
-        ev = OpalEvaluator()
-        str(ev.codegen).should.contain('declare void @"free"(i8* %".1")')
-
-    def test_adds_puts_builtins(self):
-        ev = OpalEvaluator()
-        str(ev.codegen).should.contain('declare i32 @"puts"(i8* %".1")')
 
     def test_works_for_strings(self):
         opal_string = 'something something complete..'
@@ -51,7 +40,31 @@ class TestEvaluator:
 
         str(ev.codegen).should.match(global_str_constant)
 
-    def test_works_for_printing_strings(self):
+
+class TestBuiltins:
+    def test_includes_malloc(self):
+        ev = OpalEvaluator()
+        str(ev.codegen).should.contain('declare i8* @"malloc"(i32 %".1")')
+
+    def test_includes_free_function(self):
+        ev = OpalEvaluator()
+        str(ev.codegen).should.contain('declare void @"free"(i8* %".1")')
+
+    def test_includes_puts_function(self):
+        ev = OpalEvaluator()
+        str(ev.codegen).should.contain('declare i32 @"puts"(i8* %".1")')
+
+
+class TestExternal:
+    def test_includes_int_to_c_function(self):
+        ev = OpalEvaluator()
+        ev.evaluate('1 / 1', run=False)
+        # noinspection PyStatementEffect
+        ev.llvm_mod.get_function('int_to_string').should.be.truthy
+
+
+class TestPrinting:
+    def test_works_for_strings(self):
         something_complete = f"""printing string"""
         expr = f"""print('%s')
         """ % something_complete
@@ -65,7 +78,7 @@ class TestEvaluator:
         str(ev.codegen).should.match(global_str_constant)
         str(ev.codegen).should.contain('%".3" = call i32 @"puts"(i8* %".2")')
 
-    def test_works_for_printing_multiple_strings(self):
+    def test_works_for_multiple_strings(self):
         str1 = f"something"
         str2 = f"something different"
 
@@ -78,7 +91,7 @@ class TestEvaluator:
         str(ev.codegen).should.contain(CodeGenerator.get_string_name(str1))
         str(ev.codegen).should.contain(CodeGenerator.get_string_name(str2))
 
-    def test_printing_same_string_twice_just_creates_one_constant(self):
+    def test_twice_just_creates_one_constant(self):
         str1 = f"same thing printed twice"
 
         expr = f"""

@@ -125,12 +125,10 @@ class TestLarkParser:
 
     def test_sum_larger_than_nine(self):
         expr = """
-        10 / 2
+        240 / 24
         """
 
         prog = self.get_parser().parse(expr)
         res = self.parsed_representation(prog)
 
-        print(prog.pretty())
-
-        res.should.equal('program block instruction div int 10 int 2')
+        res.should.equal('program block instruction div int 240 int 24')

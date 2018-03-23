@@ -20,8 +20,6 @@ class OpalEvaluator:
         self.codegen = CodeGenerator()
         self.llvm_mod = None
 
-        # noinspection PyMethodMayBeStatic
-
     def _get_external_modules(self):
 
         clib_files_pattern = path.abspath(path.join(path.dirname(path.realpath(opal.__file__)), '../llvm_ir', '*.ll'))
@@ -35,7 +33,7 @@ class OpalEvaluator:
                 mods.append(module_ref)
         return mods
 
-    def evaluate(self, code, print_ir=False):
+    def evaluate(self, code, print_ir=False, run=True):
         ast = ASTVisitor().transform(parser.parse(code))
 
         self.codegen.generate_code(ast)
@@ -56,6 +54,9 @@ class OpalEvaluator:
             print(self.llvm_mod)
 
         target_machine = llvm.Target.from_default_triple().create_target_machine()
+
+        if not run:
+            return
 
         with llvm.create_mcjit_compiler(self.llvm_mod, target_machine) as ee:
 
