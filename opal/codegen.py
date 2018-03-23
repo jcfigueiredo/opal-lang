@@ -55,7 +55,7 @@ class CodeGenerator:
 
     def generate_code(self, node):
         assert isinstance(node, Program)
-        return self._codegen(node)
+        return self.visit(node)
 
     def alloc_and_store(self, val, typ, name=''):
         var_addr = self.builder.alloca(typ, name=name)
@@ -93,7 +93,7 @@ class CodeGenerator:
 
         return gv
 
-    def _codegen(self, node):
+    def visit(self, node):
         """
         Dynamically invoke the code generator for each specific node
         :param node: ASTNode
@@ -137,19 +137,19 @@ class CodeGenerator:
         return self.insert_const_string(node.val)
 
     def visit_print(self, node):
+        val = self.visit(node.val)
 
         if isinstance(node.val, String):
-            stringz = self.insert_const_string(node.val.val)
             # Cast to a i8* pointer
-            char_ty = stringz.type.pointee.element
-            str_ptr = self.builder.bitcast(stringz, char_ty.as_pointer())
+            char_ty = val.type.pointee.element
+            str_ptr = self.builder.bitcast(val, char_ty.as_pointer())
 
             self.call('puts', [str_ptr])
             return
 
         if isinstance(node.val, Integer):
-            val = node.val.val
-            number = self.alloc_and_store(self.const(val), Integer.as_llvm)
+
+            number = self.alloc_and_store(val, val.type)
             number_ptr = self.load(number)
 
             buffer = self.builder.alloca(ir.ArrayType(Int8.as_llvm, 10))
@@ -165,8 +165,8 @@ class CodeGenerator:
         raise NotImplementedError(f'can\'t print {node.val}')
 
     def visit_binop(self, node):
-        left = self._codegen(node.lhs)
-        right = self._codegen(node.rhs)
+        left = self.visit(node.lhs)
+        right = self.visit(node.rhs)
 
         ops = {'+': 'addtmp', '-': 'subtmp', '*': 'multmp', '/': 'sdivtmp', }
 
@@ -183,14 +183,14 @@ class CodeGenerator:
     def visit_block(self, node):
         ret = None
         for stmt in node.statements:
-            temp = self._codegen(stmt)
+            temp = self.visit(stmt)
             if temp:
                 ret = temp
         return ret
 
     # noinspection PyPep8Naming
     def visit_program(self, node):
-        self._codegen(node.block)
+        self.visit(node.block)
         self.branch(self.exit_blocks[0])
         self.position_at_end(self.exit_blocks[0])
         self.builder.ret_void()
