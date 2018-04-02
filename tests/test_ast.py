@@ -118,7 +118,7 @@ class TestFloatNodes:
         v1.val.should.be.a(float)
 
     def test_has_a_llvm_representation(self):
-        Float.as_llvm.should.be.equal(ir.FloatType())
+        Float.as_llvm.should.be.equal(ir.DoubleType())
 
     def test_can_be_compared(self):
         Float(10.135).should.be.equal(Float(10.135))

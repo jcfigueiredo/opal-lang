@@ -19,16 +19,16 @@ class Any(metaclass=MetaType):
     _llvm_type = ir.VoidType()
 
 
-class Int(Any):
-    _llvm_type = ir.IntType(32)
-
-
 class Int8(Any):
     _llvm_type = ir.IntType(8)
 
 
+class Int(Any):
+    _llvm_type = ir.IntType(32)
+
+
 class Float(Any):
-    _llvm_type = ir.FloatType()
+    _llvm_type = ir.DoubleType()
 
 
 class String(Any):

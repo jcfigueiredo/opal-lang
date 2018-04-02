@@ -166,12 +166,12 @@ class CodeGenerator:
             self.call('puts', [buffer_ptr])
             return
 
+        # TODO : normalize this so it doesn't depend on both llvm and native types
         if isinstance(node.val, Float) or val.type is Float.as_llvm:
             percent_g = self.visit_string(String('%g\n'))
             percent_g = self.gep(percent_g, [self.const(0), self.const(0)])
             percent_g = self.builder.bitcast(percent_g, Int8.as_llvm.as_pointer())
-            val_as_double = self.builder.fpext(val, ir.DoubleType())
-            self.call('printf', [percent_g, val_as_double])
+            self.call('printf', [percent_g, val])
             return
 
         raise NotImplementedError(f'can\'t print {node.val}')

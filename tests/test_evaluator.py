@@ -127,8 +127,7 @@ class TestPrinting:
         ev = OpalEvaluator()
         ev.evaluate(expr)
 
-        str(ev.codegen).should.contain('fpext float 0x407b01ba60000000 to double')
-        str(ev.codegen).should.contain('@"printf"(i8* %".2", double %".3")')
+        str(ev.codegen).should.contain('@"printf"(i8* %".2", double 0x407b01ba5e353f7d)')
 
     def test_works_for_arithmetics(self):
         expr = f"print(1000 / 10 - 80 + 22)"
