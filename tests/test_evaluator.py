@@ -82,15 +82,6 @@ class TestPrinting:
         str(ev.codegen).should.match(global_str_constant)
         str(ev.codegen).should.contain('%".3" = call i32 @"puts"(i8* %".2")')
 
-    def test_works_for_integers(self):
-        expr = f"print(432234)"
-
-        ev = OpalEvaluator()
-        ev.evaluate(expr)
-
-        str(ev.codegen).should.match(r'call i8\* @"int_to_string"')
-        str(ev.codegen).should.match(r'call i32 @"puts"\(i8\* %".6"\)')
-
     def test_works_for_multiple_strings(self):
         str1 = f"something"
         str2 = f"something different"
@@ -116,6 +107,41 @@ class TestPrinting:
 
         const_string_declaration_regex = r'(@"str_[0-9a-fA-F]+" =)'
         re.findall(const_string_declaration_regex, str(ev.codegen), flags=re.MULTILINE).should.have.length_of(1)
+
+    def test_works_for_integers(self):
+        expr = f"print(432234)"
+
+        ev = OpalEvaluator()
+        ev.evaluate(expr)
+
+        str(ev.codegen).should.match(r'call i8\* @"int_to_string"')
+        str(ev.codegen).should.match(r'call i32 @"puts"\(i8\* %".6"\)')
+
+    def test_works_for_arithmetics(self):
+        expr = f"print(1000 / 10 - 80 + 22)"
+
+        ev = OpalEvaluator()
+        ev.evaluate(expr)
+
+        codegen = str(ev.codegen)
+
+        codegen.should.contain('sdiv i32 1000')
+        codegen.should.contain('sub i32 %"divtmp", 80')
+        codegen.should.contain('add i32 %"subtmp", 22')
+        codegen.should.match(r'call i32 @"puts"\(i8\* %".6"\)')
+
+    def test_works_for_arithmetics_with_parenthesis(self):
+        expr = f"print(1000 / (10 - 80) + 22)"
+
+        ev = OpalEvaluator()
+        ev.evaluate(expr)
+
+        codegen = str(ev.codegen)
+
+        codegen.should.contain('sub i32 10, 80')
+        codegen.should.contain('sdiv i32 1000, %"subtmp"')
+        codegen.should.contain('add i32 %"divtmp", 22')
+        codegen.should.match(r'call i32 @"puts"\(i8\* %".6"\)')
 
 
 class TestRegression:

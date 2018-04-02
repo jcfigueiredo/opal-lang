@@ -137,6 +137,7 @@ class CodeGenerator:
         return self.insert_const_string(node.val)
 
     def visit_print(self, node):
+
         val = self.visit(node.val)
 
         if isinstance(node.val, String):
@@ -147,8 +148,8 @@ class CodeGenerator:
             self.call('puts', [str_ptr])
             return
 
-        if isinstance(node.val, Integer):
-
+        # TODO : normalize this so it doesn't depend on both llvm and native types
+        if isinstance(node.val, Integer) or val.type is Integer.as_llvm:
             number = self.alloc_and_store(val, val.type)
             number_ptr = self.load(number)
 
@@ -159,7 +160,6 @@ class CodeGenerator:
             self.call('int_to_string', [number_ptr, buffer_ptr, (self.const(10))])
 
             self.call('puts', [buffer_ptr])
-
             return
 
         raise NotImplementedError(f'can\'t print {node.val}')
