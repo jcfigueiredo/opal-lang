@@ -58,6 +58,10 @@ class TestBuiltins:
         ev = OpalEvaluator()
         str(ev.codegen).should.contain('declare i8* @"int_to_string"(i32 %".1", i8* %".2", i32 %".3")')
 
+    def test_includes_printf(self):
+        ev = OpalEvaluator()
+        str(ev.codegen).should.contain('declare i32 @"printf"(i8* %".1", ...)')
+
 
 class TestExternal:
     def test_includes_int_to_c_function(self):
@@ -116,6 +120,15 @@ class TestPrinting:
 
         str(ev.codegen).should.match(r'call i8\* @"int_to_string"')
         str(ev.codegen).should.match(r'call i32 @"puts"\(i8\* %".6"\)')
+
+    def test_works_for_floats(self):
+        expr = f"print(432.108)"
+
+        ev = OpalEvaluator()
+        ev.evaluate(expr)
+
+        str(ev.codegen).should.contain('fpext float 0x407b01ba60000000 to double')
+        str(ev.codegen).should.contain('@"printf"(i8* %".2", double %".3")')
 
     def test_works_for_arithmetics(self):
         expr = f"print(1000 / 10 - 80 + 22)"

@@ -53,6 +53,10 @@ class CodeGenerator:
                                                                        Integer.as_llvm])
         ir.Function(self.module, int_to_string_ty, 'int_to_string')
 
+        printf_ty = ir.FunctionType(Integer.as_llvm, [Int8.as_llvm.as_pointer()],
+                                    var_arg=True)
+        ir.Function(self.module, printf_ty, 'printf')
+
     def generate_code(self, node):
         assert isinstance(node, Program)
         return self.visit(node)
@@ -160,6 +164,14 @@ class CodeGenerator:
             self.call('int_to_string', [number_ptr, buffer_ptr, (self.const(10))])
 
             self.call('puts', [buffer_ptr])
+            return
+
+        if isinstance(node.val, Float) or val.type is Float.as_llvm:
+            percent_g = self.visit_string(String('%g\n'))
+            percent_g = self.gep(percent_g, [self.const(0), self.const(0)])
+            percent_g = self.builder.bitcast(percent_g, Int8.as_llvm.as_pointer())
+            val_as_double = self.builder.fpext(val, ir.DoubleType())
+            self.call('printf', [percent_g, val_as_double])
             return
 
         raise NotImplementedError(f'can\'t print {node.val}')
