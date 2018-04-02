@@ -27,6 +27,7 @@ class Int(Any):
     _llvm_type = ir.IntType(32)
 
 
+# TODO: make it decimal? https://docs.python.org/3/library/decimal.html
 class Float(Any):
     _llvm_type = ir.DoubleType()
 
