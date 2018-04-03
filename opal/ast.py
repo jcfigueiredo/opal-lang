@@ -57,34 +57,6 @@ class Block(ASTNode):
         return s
 
 
-# # noinspection PyAbstractClass
-# class Function(ASTNode):
-#     def __init__(self, proto, body):
-#         self.proto = proto
-#         self.body = body
-#
-#     _anonymous_function_counter = 0
-#
-#     @classmethod
-#     def create_anonymous(cls, expr):
-#         """Create an anonymous function to hold an expression."""
-#         cls._anonymous_function_counter += 1
-#         return cls(Prototype(f'_anon{cls._anonymous_function_counter}'), expr)
-#
-#     def is_anonymous(self):
-#         return self.proto.name.startswith('_anon')
-#
-#
-# class Prototype(ASTNode):
-#
-#     def __init__(self, name):
-#         self.name = name
-#
-#     @property
-#     def dump(self):
-#         return f'({self.__class__.__name__} {self.name})'
-
-
 # noinspection PyAbstractClass
 class ExprAST(ASTNode):
     pass
@@ -165,6 +137,14 @@ class Print(Value, types.Any):
 
 class Void(types.Any):
     pass
+
+
+class Boolean(Value, types.Boolean):
+    def __init__(self, val):
+        self.val = bool(val)
+
+    def dump(self):
+        return f'({self.__class__.__name__} {str(self.val).lower()})'
 
 
 class Integer(Value, types.Int):

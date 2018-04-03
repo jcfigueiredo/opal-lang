@@ -19,6 +19,10 @@ class Any(metaclass=MetaType):
     _llvm_type = ir.VoidType()
 
 
+class Boolean(Any):
+    _llvm_type = ir.IntType(1)
+
+
 class Int8(Any):
     _llvm_type = ir.IntType(8)
 

@@ -58,6 +58,10 @@ class TestDumpingExpressions:
         prog = parse("1 * 2\n4 + 3\n2 - 1 + 4 * 2\n")
         prog.dump().should.contain('(* 1 2)\n(+ 4 3)\n(+ (- 2 1) (* 4 2))')
 
+    def test_works_for_boolean_consts(self):
+        prog = parse("true")
+        prog.dump().should.contain('(Block\n  (Boolean true))')
+
 
 class TestComparingNodes:
     def test_works_for_programs(self):

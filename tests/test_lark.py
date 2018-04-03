@@ -49,6 +49,20 @@ class TestLarkParser:
         res = self.parsed_representation(prog)
         res.should.equal('program block instruction string \'andrea\'')
 
+    def test_handles_booleans_true(self):
+        expr = "true"
+
+        prog = self.get_parser().parse(expr)
+        res = self.parsed_representation(prog)
+        res.should.equal('program block instruction boolean true')
+
+    def test_handles_booleans_false(self):
+        expr = "false"
+
+        prog = self.get_parser().parse(expr)
+        res = self.parsed_representation(prog)
+        res.should.equal('program block instruction boolean false')
+
     def test_multi_line(self):
         expr = """1 - 1
         2 * 3

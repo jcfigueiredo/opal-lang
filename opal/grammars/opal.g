@@ -18,11 +18,12 @@ instruction: sum
 // !_add_op: "+"|"-"
 // !_mul_op: "*"|"@"|"/"|"%"|"//"
 
-?const: float | int | string
+?const: float | int | string | boolean
 
 float: FLOAT
 int: INT
 string: STRING
+!boolean: "true" | "false"
 
 INT: ["+"|"-"] DIGIT+
 FLOAT: ["+"|"-"] INT "." INT
