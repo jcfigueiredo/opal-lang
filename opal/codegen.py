@@ -103,7 +103,7 @@ class CodeGenerator:
         :param node: ASTNode
         """
 
-        if isinstance(node, Integer) or isinstance(node, Float):
+        if isinstance(node, Integer) or isinstance(node, Float) or isinstance(node, Boolean):
             return self.visit_value(node)
 
         if isinstance(node, BinaryOp):
@@ -130,6 +130,9 @@ class CodeGenerator:
         return self.builder.call(func, args)
 
     def const(self, val):
+        # has to come first because freaking `isinstance(True, int) == True`
+        if isinstance(val, bool):
+            return ir.Constant(Boolean.as_llvm, val and 1 or 0)
         if isinstance(val, int):
             return ir.Constant(Integer.as_llvm, val)
         if isinstance(val, float):
@@ -141,7 +144,6 @@ class CodeGenerator:
         return self.insert_const_string(node.val)
 
     def visit_print(self, node):
-
         val = self.visit(node.val)
 
         if isinstance(node.val, String):
@@ -172,6 +174,13 @@ class CodeGenerator:
             percent_g = self.gep(percent_g, [self.const(0), self.const(0)])
             percent_g = self.builder.bitcast(percent_g, Int8.as_llvm.as_pointer())
             self.call('printf', [percent_g, val])
+            return
+
+        if isinstance(node.val, Boolean):
+            if val.constant:
+                self.visit(Print(String('true')))
+            else:
+                self.visit(Print(String('false')))
             return
 
         raise NotImplementedError(f'can\'t print {node.val}')

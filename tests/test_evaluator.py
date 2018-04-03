@@ -155,6 +155,31 @@ class TestPrinting:
         codegen.should.contain('add i32 %"divtmp", 22')
         codegen.should.match(r'call i32 @"puts"\(i8\* %".6"\)')
 
+    def test_works_for_booleans(self):
+        expr = f"print(true)"
+
+        ev = OpalEvaluator()
+        ev.evaluate(expr)
+
+        codegen = str(ev.codegen)
+
+        str(codegen).should.contain(CodeGenerator.get_string_name('true'))
+
+    def test_works_for_both_booleans(self):
+
+        expr = f"""
+        print(true)
+        print(false)
+        """
+
+        ev = OpalEvaluator()
+        ev.evaluate(expr)
+
+        codegen = str(ev.codegen)
+
+        str(codegen).should.contain(CodeGenerator.get_string_name('true'))
+        str(codegen).should.contain(CodeGenerator.get_string_name('false'))
+
 
 class TestRegression:
     def test_simple_division(self):

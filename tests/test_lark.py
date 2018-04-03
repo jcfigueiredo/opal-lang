@@ -1,14 +1,4 @@
-import os
 import re
-
-import pytest
-from lark.lark import Lark
-from lark.lexer import Token
-from lark.tree import InlineTransformer
-
-import opal
-from opal.ast import Block, Program, Float, Integer, Add, Div, Mul, Sub, String
-
 
 # from lark.tree import pydot__tree_to_png  # Just a neat utility function
 # pydot__tree_to_png(res, "opal-grammar.png")
@@ -68,6 +58,7 @@ class TestLarkParser:
         2 * 3
         """
 
+        # noinspection PyUnusedLocal
         res = self.get_parser().parse(expr)
 
     def test_single_statement(self):
@@ -75,6 +66,7 @@ class TestLarkParser:
         10 * 100
         """
 
+        # noinspection PyUnusedLocal
         res = self.get_parser().parse(expr)
 
         # print(res.pretty())
@@ -84,6 +76,7 @@ class TestLarkParser:
     def test_single_line(self):
         expr = """1 - 1"""
 
+        # noinspection PyUnusedLocal
         res = self.get_parser().parse(expr)
 
         # print(res.pretty())

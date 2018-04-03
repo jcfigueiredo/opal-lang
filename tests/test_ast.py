@@ -6,7 +6,7 @@ from opal.parser import parser
 
 
 def parse(expr):
-    return ASTVisitor().transform(parser.parse(f'{expr}'))
+    return ASTVisitor().transform(parser.parse(expr))
 
 
 class TestParsingExpressions:
@@ -58,9 +58,13 @@ class TestDumpingExpressions:
         prog = parse("1 * 2\n4 + 3\n2 - 1 + 4 * 2\n")
         prog.dump().should.contain('(* 1 2)\n(+ 4 3)\n(+ (- 2 1) (* 4 2))')
 
-    def test_works_for_boolean_consts(self):
+    def test_works_for_boolean_true_consts(self):
         prog = parse("true")
         prog.dump().should.contain('(Block\n  (Boolean true))')
+
+    def test_works_for_boolean_false_consts(self):
+        prog = parse("false")
+        prog.dump().should.contain('(Block\n  (Boolean false))')
 
 
 class TestComparingNodes:
