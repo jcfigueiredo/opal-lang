@@ -66,6 +66,13 @@ class TestDumpingExpressions:
         prog = parse("false")
         prog.dump().should.contain('(Block\n  (Boolean false))')
 
+    def test_works_comparison(self):
+        prog = parse("2 > 1")
+        prog.dump().should.contain('(Block\n  (> 2 1))')
+
+        prog = parse("1 < 2")
+        prog.dump().should.contain('(Block\n  (< 1 2))')
+
 
 class TestComparingNodes:
     def test_works_for_programs(self):

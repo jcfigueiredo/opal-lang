@@ -98,6 +98,14 @@ class Sub(BinaryOp):
     op = '-'
 
 
+class GreaterThan(BinaryOp):
+    op = '>'
+
+
+class LessThan(BinaryOp):
+    op = '<'
+
+
 # noinspection PyAbstractClass
 class Value(ExprAST):
     val = None

@@ -7,7 +7,8 @@ from llvmlite import ir as ir
 from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
 from opal import operations
-from opal.ast import Program, BinaryOp, Integer, Block, Add, Sub, Mul, Div, Float, String, Print, Boolean
+from opal.ast import Program, BinaryOp, Integer, Block, Add, Sub, Mul, Div, Float, String, Print, Boolean, GreaterThan, \
+    LessThan
 from opal.types import Int8, Any
 
 PRIVATE_LINKAGE = 'private'
@@ -262,11 +263,18 @@ class ASTVisitor(InlineTransformer):
     def float(self, const):
         return Float(const.value)
 
+    def string(self, const):
+        return String(const.value[1:][:-1])
+
     def boolean(self, const):
         return Boolean(const.value == 'true')
 
-    def string(self, const):
-        return String(const.value[1:][:-1])
+    def comp(self, lhs, op, rhs):
+        ops = {
+            '>': GreaterThan,
+            '<': LessThan,
+        }
+        return ops[op.value](lhs, rhs)
 
     # noinspection PyUnusedLocal
     def term(self, nl):

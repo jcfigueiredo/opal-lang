@@ -12,8 +12,11 @@ instruction: sum
 ?product: atom
     | product "*" atom  -> mul
     | product "/" atom  -> div
-?atom: const
+?atom: atom _comp_op atom -> comp
+    | const
     | "(" sum ")"
+
+!_comp_op: ">"|"<"
 
 // !_add_op: "+"|"-"
 // !_mul_op: "*"|"@"|"/"|"%"|"//"
