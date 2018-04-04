@@ -1,5 +1,7 @@
 import re
 
+from wurlitzer import pipes
+
 from opal.codegen import CodeGenerator
 from opal.evaluator import OpalEvaluator
 
@@ -87,17 +89,21 @@ class TestPrinting:
         str(ev.codegen).should.contain('%".3" = call i32 @"puts"(i8* %".2")')
 
     def test_works_for_multiple_strings(self):
-        str1 = f"something"
-        str2 = f"something different"
+        str1 = 'something special'
+        str2 = 'something different'
 
         expr = f"""print('%s')
         print('%s')
         """ % (str1, str2)
         ev = OpalEvaluator()
-        ev.evaluate(expr)
 
-        str(ev.codegen).should.contain(CodeGenerator.get_string_name(str1))
-        str(ev.codegen).should.contain(CodeGenerator.get_string_name(str2))
+        with pipes() as (out, _):
+            ev.evaluate(expr)
+
+        out = out.read()
+
+        out.should.contain(str1)
+        out.should.contain(str2)
 
     def test_twice_just_creates_one_constant(self):
         str1 = f"same thing printed twice"
@@ -107,7 +113,13 @@ class TestPrinting:
         print('{str1}')
         """
         ev = OpalEvaluator()
-        ev.evaluate(expr)
+
+        with pipes() as (out, _):
+            ev.evaluate(expr)
+
+        out = out.read()
+
+        out.should.contain('same thing printed twice')
 
         const_string_declaration_regex = r'(@"str_[0-9a-fA-F]+" =)'
         re.findall(const_string_declaration_regex, str(ev.codegen), flags=re.MULTILINE).should.have.length_of(1)
@@ -116,44 +128,49 @@ class TestPrinting:
         expr = f"print(432234)"
 
         ev = OpalEvaluator()
-        ev.evaluate(expr)
 
-        str(ev.codegen).should.match(r'call i8\* @"int_to_string"')
-        str(ev.codegen).should.match(r'call i32 @"puts"\(i8\* %".6"\)')
+        with pipes() as (out, _):
+            ev.evaluate(expr)
+
+        out = out.read()
+
+        out.should.contain('432234')
 
     def test_works_for_floats(self):
         expr = f"print(432.108)"
 
         ev = OpalEvaluator()
-        ev.evaluate(expr)
 
-        str(ev.codegen).should.contain('@"printf"(i8* %".2", double 0x407b01ba5e353f7d)')
+        with pipes() as (out, _):
+            ev.evaluate(expr)
+
+        out = out.read()
+
+        out.should.contain('432.108')
 
     def test_works_for_arithmetics(self):
         expr = f"print(1000 / 10 - 80 + 22)"
 
         ev = OpalEvaluator()
-        ev.evaluate(expr)
 
-        codegen = str(ev.codegen)
+        with pipes() as (out, _):
+            ev.evaluate(expr)
 
-        codegen.should.contain('sdiv i32 1000')
-        codegen.should.contain('sub i32 %"divtmp", 80')
-        codegen.should.contain('add i32 %"subtmp", 22')
-        codegen.should.match(r'call i32 @"puts"\(i8\* %".6"\)')
+        out = out.read()
+
+        out.should.contain('42')
 
     def test_works_for_arithmetics_with_parenthesis(self):
         expr = f"print(1000 / (10 - 80) + 22)"
 
         ev = OpalEvaluator()
-        ev.evaluate(expr)
 
-        codegen = str(ev.codegen)
+        with pipes() as (out, _):
+            ev.evaluate(expr)
 
-        codegen.should.contain('sub i32 10, 80')
-        codegen.should.contain('sdiv i32 1000, %"subtmp"')
-        codegen.should.contain('add i32 %"divtmp", 22')
-        codegen.should.match(r'call i32 @"puts"\(i8\* %".6"\)')
+        out = out.read()
+
+        out.should.contain('8')
 
     def test_works_for_booleans(self):
         expr = f"print(true)"
@@ -166,19 +183,20 @@ class TestPrinting:
         str(codegen).should.contain(CodeGenerator.get_string_name('true'))
 
     def test_works_for_both_booleans(self):
-
         expr = f"""
         print(true)
         print(false)
         """
 
         ev = OpalEvaluator()
-        ev.evaluate(expr)
 
-        codegen = str(ev.codegen)
+        with pipes() as (out, _):
+            ev.evaluate(expr)
 
-        str(codegen).should.contain(CodeGenerator.get_string_name('true'))
-        str(codegen).should.contain(CodeGenerator.get_string_name('false'))
+        out = out.read()
+
+        out.should.contain('true')
+        out.should.contain('false')
 
 
 class TestRegression:
@@ -193,3 +211,5 @@ class TestRegression:
         ev = OpalEvaluator()
 
         ev.evaluate(expr)
+
+

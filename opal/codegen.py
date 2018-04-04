@@ -232,7 +232,8 @@ class ASTVisitor(InlineTransformer):
         return program
 
     def block(self, *args):
-        return Block([arg for arg in args if arg])
+        statements_excluding_token = [arg for arg in args if arg and not isinstance(arg, Token)]
+        return Block(statements_excluding_token)
 
     # noinspection PyUnusedLocal
     def instruction(self, a, b=None):

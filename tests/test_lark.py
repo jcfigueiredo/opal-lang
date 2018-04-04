@@ -139,3 +139,25 @@ class TestLarkParser:
         res = self.parsed_representation(prog)
 
         res.should.equal('program block instruction div int 240 int 24')
+
+    def test_multiline_expression(self):
+        expr = """
+        240 / 24
+        240 + 24
+        """
+
+        prog = self.get_parser().parse(expr)
+        res = self.parsed_representation(prog)
+
+        res.should.contain('instruction div int 240 int 24')
+        res.should.contain('instruction add int 240 int 24')
+
+    # def test_compares_integers(self):
+    #     expr = """
+    #     24123 > 24
+    #     10 < 12
+    #     """
+    #
+    #     prog = self.get_parser().parse(expr)
+    #     res = self.parsed_representation(prog)
+    #     res.should.equal('program block instruction comp int 240 int 24')

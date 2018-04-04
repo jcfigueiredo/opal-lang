@@ -54,7 +54,7 @@ class TestDumpingExpressions:
         prog = parse("10 * 2 / 3 - 1")
         prog.dump().should.contain('(- (/ (* 10 2) 3) 1)')
 
-    def test_works_for_multi_line(self):
+    def test_works_for_multiline(self):
         prog = parse("1 * 2\n4 + 3\n2 - 1 + 4 * 2\n")
         prog.dump().should.contain('(* 1 2)\n(+ 4 3)\n(+ (- 2 1) (* 4 2))')
 
