@@ -178,18 +178,19 @@ class CodeGenerator:
             return
 
         if isinstance(node.val, Boolean) or val.type is Boolean.as_llvm:
+            true = self.insert_const_string('true')
+            true = self.gep(true, [self.const(0), self.const(0)])
+            false = self.insert_const_string('false')
+            false = self.gep(false, [self.const(0), self.const(0)])
 
             if hasattr(val, 'constant'):
                 if val.constant:
-                    self.visit(Print(String('true')))
+                    val = true
                 else:
-                    self.visit(Print(String('false')))
-                return
+                    val = false
+            else:
+                val = self.builder.select(val, true, false)
 
-            val = self.builder.select(val,
-                                      self.gep(self.insert_const_string('true'), [self.const(0), self.const(0)]),
-                                      self.gep(self.insert_const_string('false'), [self.const(0), self.const(0)])
-                                      )
             self.call('printf', [val])
 
             return
