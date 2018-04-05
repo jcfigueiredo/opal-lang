@@ -37,5 +37,7 @@ def float_ops(builder, left, right, node):
     elif op == DIV:
         return builder.udiv(builder.fptosi(left, ir.IntType(64)),
                             builder.fptosi(right, ir.IntType(64)), 'ffloordivtmp')
+    elif op in [GREATER_THAN, LESS_THAN]:
+        return builder.fcmp_ordered(op, left, right, 'booltmp')
 
     raise SyntaxError('Unknown binary operator', op)
