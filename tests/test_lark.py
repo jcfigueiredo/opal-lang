@@ -152,13 +152,31 @@ class TestLarkParser:
         res.should.contain('instruction div int 240 int 24')
         res.should.contain('instruction add int 240 int 24')
 
-    def test_compares_integers(self):
+    def test_compares_greater_and_less(self):
         expr = """
         24123 > 24
         10 < 12
+        12.3 > 24.23
+        10.11 < 12.43
         """
 
         prog = self.get_parser().parse(expr)
         res = self.parsed_representation(prog)
         res.should.contain('instruction comp int 24123 > int 24')
         res.should.contain('instruction comp int 10 < int 12')
+
+        res.should.contain('instruction comp float 12.3 > float 24.23')
+        res.should.contain('instruction comp float 10.11 < float 12.43')
+
+    def test_compares_equal(self):
+        expr = """
+        12 == 24
+        23.4 == 5.67
+        """
+
+        prog = self.get_parser().parse(expr)
+        res = self.parsed_representation(prog)
+        res.should.contain('instruction comp int 12 == int 24')
+        res.should.contain('instruction comp float 23.4 == float 5.67')
+
+

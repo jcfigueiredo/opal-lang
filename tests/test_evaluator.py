@@ -201,7 +201,7 @@ class TestPrinting:
 
 
 class TestComparison:
-    def test_should_be_work_for_greater_than(self):
+    def test_should_work_for_greater_than(self):
         expr = f"""
         print(2 > 1)
         """
@@ -215,7 +215,7 @@ class TestComparison:
 
         out.should.contain('true')
 
-    def test_should_be_work_for_less_than(self):
+    def test_should_work_for_less_than(self):
         expr = f"""
         print(2 < 1)
         """
@@ -229,7 +229,7 @@ class TestComparison:
 
         out.should.contain('false')
 
-    def test_should_be_work_for_both_integers_greater_and_less_than(self):
+    def test_should_work_for_both_integers_greater_and_less_than(self):
         expr = f"""
         print(3 < 10)
         print(20 < 5)
@@ -245,7 +245,7 @@ class TestComparison:
         out.should.contain('false')
         out.should.contain('true')
 
-    def test_should_be_work_for_both_floats_greater_and_less_than(self):
+    def test_should_work_for_both_floats_greater_and_less_than(self):
         expr = f"""
         print(3.0 < 10.1)
         print(20.4 < 5.4)
@@ -260,6 +260,22 @@ class TestComparison:
 
         out.should.contain('false')
         out.should.contain('true')
+
+    def test_should_work_for_equality(self):
+        expr = f"""
+        print(3 == 3)
+        print(3 == 8)
+        """
+
+        ev = OpalEvaluator()
+
+        with pipes() as (out, _):
+            ev.evaluate(expr)
+
+        out = out.read()
+
+        out.should.contain('true')
+        out.should.contain('false')
 
 
 class TestRegression:

@@ -106,6 +106,10 @@ class LessThan(BinaryOp):
     op = '<'
 
 
+class Equals(BinaryOp):
+    op = '=='
+
+
 # noinspection PyAbstractClass
 class Value(ExprAST):
     val = None

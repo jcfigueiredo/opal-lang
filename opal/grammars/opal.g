@@ -16,7 +16,7 @@ instruction: sum
     | const
     | "(" sum ")"
 
-!_comp_op: ">"|"<"
+!_comp_op: ">"|"<"|"=="
 
 // !_add_op: "+"|"-"
 // !_mul_op: "*"|"@"|"/"|"%"|"//"
