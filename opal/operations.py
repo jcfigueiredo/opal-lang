@@ -1,9 +1,13 @@
 from llvmlite import ir
 
+from opal.ast import Boolean
+
 PLUS = '+'
 MINUS = '-'
 MUL = '*'
 DIV = '/'  # TODO: Change it to floordiv
+GREATER_THAN = '>'
+LESS_THAN = '<'
 
 
 def int_ops(builder, left, right, node):
@@ -16,8 +20,10 @@ def int_ops(builder, left, right, node):
         return builder.mul(left, right, 'multmp')
     elif op == DIV:
         return builder.sdiv(left, right, 'divtmp')
-    else:
-        raise SyntaxError('Unknown binary operator', op)
+    elif op in [GREATER_THAN, LESS_THAN]:
+        return builder.icmp_signed(op, left, right, 'booltmp')
+
+    raise SyntaxError('Unknown binary operator', op)
 
 
 def float_ops(builder, left, right, node):
@@ -31,5 +37,5 @@ def float_ops(builder, left, right, node):
     elif op == DIV:
         return builder.udiv(builder.fptosi(left, ir.IntType(64)),
                             builder.fptosi(right, ir.IntType(64)), 'ffloordivtmp')
-    else:
-        raise SyntaxError('Unknown binary operator', op)
+
+    raise SyntaxError('Unknown binary operator', op)

@@ -73,6 +73,16 @@ class TestDumpingExpressions:
         prog = parse("1 < 2")
         prog.dump().should.contain('(Block\n  (< 1 2))')
 
+        prog = parse("22.98 > 0.92")
+        prog.dump().should.contain('(Block\n  (> 22.98 0.92))')
+
+        prog = parse("1.2 < 2.9")
+        prog.dump().should.contain('(Block\n  (< 1.2 2.9))')
+
+        # won't be implement this for a while, even if the syntax supports
+        prog = parse("'one' < 'two'")
+        prog.dump().should.contain('(Block\n  (< one two))')
+
 
 class TestComparingNodes:
     def test_works_for_programs(self):

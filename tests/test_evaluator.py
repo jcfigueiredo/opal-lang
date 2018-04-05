@@ -200,6 +200,36 @@ class TestPrinting:
         out.should.contain('false')
 
 
+class TestComparison:
+    def test_should_be_work_for_greater_than(self):
+        expr = f"""
+        print(2 > 1)
+        """
+
+        ev = OpalEvaluator()
+
+        with pipes() as (out, _):
+            ev.evaluate(expr)
+
+        out = out.read()
+
+        out.should.contain('true')
+
+    def test_should_be_work_for_less_than(self):
+        expr = f"""
+        print(2 < 1)
+        """
+
+        ev = OpalEvaluator()
+
+        with pipes() as (out, _):
+            ev.evaluate(expr)
+
+        out = out.read()
+
+        out.should.contain('false')
+
+
 class TestRegression:
     def test_simple_division(self):
         """

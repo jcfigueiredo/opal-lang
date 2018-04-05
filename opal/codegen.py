@@ -6,7 +6,7 @@ from llvmlite import binding as llvm
 from llvmlite import ir as ir
 from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
-from opal import operations
+from opal import operations as ops
 from opal.ast import Program, BinaryOp, Integer, Block, Add, Sub, Mul, Div, Float, String, Print, Boolean, GreaterThan, \
     LessThan
 from opal.types import Int8, Any
@@ -177,11 +177,21 @@ class CodeGenerator:
             self.call('printf', [percent_g, val])
             return
 
-        if isinstance(node.val, Boolean):
-            if val.constant:
-                self.visit(Print(String('true')))
-            else:
-                self.visit(Print(String('false')))
+        if isinstance(node.val, Boolean) or val.type is Boolean.as_llvm:
+
+            if hasattr(val, 'constant'):
+                if val.constant:
+                    self.visit(Print(String('true')))
+                else:
+                    self.visit(Print(String('false')))
+                return
+
+            val = self.builder.select(val,
+                                      self.gep(self.insert_const_string('true'), [self.const(0), self.const(0)]),
+                                      self.gep(self.insert_const_string('false'), [self.const(0), self.const(0)])
+                                      )
+            self.call('printf', [val])
+
             return
 
         raise NotImplementedError(f'can\'t print {node.val}')
@@ -190,16 +200,14 @@ class CodeGenerator:
         left = self.visit(node.lhs)
         right = self.visit(node.rhs)
 
-        ops = {'+': 'addtmp', '-': 'subtmp', '*': 'multmp', '/': 'sdivtmp', }
-
         op = node.op
-        if op not in ops:
-            raise NotImplementedError(f'The operation _{op}_ is nor support for Binary Operations.')
 
-        if left.type == Integer.as_llvm and right.type == Integer.as_llvm:
-            return operations.int_ops(self.builder, left, right, node)
+        if op in [ops.PLUS, ops.MINUS, ops.MUL, ops.DIV, ops.GREATER_THAN, ops.LESS_THAN]:
+            if left.type == Integer.as_llvm and right.type == Integer.as_llvm:
+                return ops.int_ops(self.builder, left, right, node)
+            return ops.float_ops(self.builder, left, right, node)
 
-        return operations.float_ops(self.builder, left, right, node)
+        raise NotImplementedError(f'The operation _{op}_ is nor support for Binary Operations.')
 
     # noinspection PyMethodMayBeStatic
     def visit_block(self, node):
@@ -270,11 +278,10 @@ class ASTVisitor(InlineTransformer):
         return Boolean(const.value == 'true')
 
     def comp(self, lhs, op, rhs):
-        ops = {
-            '>': GreaterThan,
-            '<': LessThan,
-        }
-        return ops[op.value](lhs, rhs)
+        return {
+            ops.GREATER_THAN: GreaterThan,
+            ops.LESS_THAN: LessThan,
+        }[op.value](lhs, rhs)
 
     # noinspection PyUnusedLocal
     def term(self, nl):
