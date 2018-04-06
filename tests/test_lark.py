@@ -171,18 +171,18 @@ class TestLarkParser:
     def test_compares_greater_than_and_less_than(self):
         expr = """
         24123 >= 24
-        10 =< 12
+        10 <= 12
         12.3 >= 24.23
-        10.11 =< 12.43
+        10.11 <= 12.43
         """
 
         prog = self.get_parser().parse(expr)
         res = self.parsed_representation(prog)
         res.should.contain('instruction comp int 24123 >= int 24')
-        res.should.contain('instruction comp int 10 =< int 12')
+        res.should.contain('instruction comp int 10 <= int 12')
 
         res.should.contain('instruction comp float 12.3 >= float 24.23')
-        res.should.contain('instruction comp float 10.11 =< float 12.43')
+        res.should.contain('instruction comp float 10.11 <= float 12.43')
 
     def test_compares_equal(self):
         expr = """

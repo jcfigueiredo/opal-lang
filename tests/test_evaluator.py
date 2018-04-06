@@ -245,6 +245,22 @@ class TestComparison:
         out.should.contain('false')
         out.should.contain('true')
 
+    def test_should_work_for_both_integers_greater_and_less_than_equal(self):
+        expr = f"""
+        print(3 <= 10)
+        print(20 <= 5)
+        """
+
+        ev = OpalEvaluator()
+
+        with pipes() as (out, _):
+            ev.evaluate(expr)
+
+        out = out.read()
+
+        out.should.contain('false')
+        out.should.contain('true')
+
     def test_should_work_for_both_floats_greater_and_less_than(self):
         expr = f"""
         print(3.0 < 10.1)

@@ -121,7 +121,7 @@ class LessThan(Comparison):
 
 
 class LessThanEqual(Comparison):
-    op = '=<'
+    op = '<='
 
 
 class Equals(Comparison):
