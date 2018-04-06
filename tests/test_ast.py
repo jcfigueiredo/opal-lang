@@ -2,7 +2,7 @@
 from llvmlite import ir
 
 from opal.ast import Program, Add, Integer, Block, Mul, LogicError, Float, String, Print, Comparison, Equals, Unequals, \
-    GreaterThan, LessThan, Sub, Div, Arithmetic
+    GreaterThan, LessThan, Sub, Div, Arithmetic, BinaryOp, GreaterThanEqual, LessThanEqual
 from opal.codegen import ASTVisitor
 from opal.parser import parser
 
@@ -214,6 +214,21 @@ class TestComparisonNodes:
         (Unequals in Comparison).should.be.true
         (GreaterThan in Comparison).should.be.true
         (LessThan in Comparison).should.be.true
+
+    def test_can_be_found_by_its_operation(self):
+        BinaryOp.by_op('+').should.be.equal(Add)
+        BinaryOp.by_op('-').should.be.equal(Sub)
+        BinaryOp.by_op('*').should.be.equal(Mul)
+        BinaryOp.by_op('/').should.be.equal(Div)
+        BinaryOp.by_op('==').should.be.equal(Equals)
+        BinaryOp.by_op('>').should.be.equal(GreaterThan)
+        BinaryOp.by_op('>=').should.be.equal(GreaterThanEqual)
+        BinaryOp.by_op('<').should.be.equal(LessThan)
+        BinaryOp.by_op('<=').should.be.equal(LessThanEqual)
+
+    def test_handles_future_operations(self):
+
+        BinaryOp.by_op('@').should.be.equal(None)
 
 
 class TestArithmeticNodes:

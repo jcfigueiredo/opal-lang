@@ -280,7 +280,10 @@ class ASTVisitor(InlineTransformer):
         return Boolean(const.value == 'true')
 
     def comp(self, lhs, op, rhs):
-        return Comparison.by_op(op.value)(lhs, rhs)
+        node = Comparison.by_op(op.value)
+        if not node:
+            raise SyntaxError(f'The operation [{op}] is not supported.')
+        return node(lhs, rhs)
 
     # noinspection PyUnusedLocal
     def term(self, nl):
