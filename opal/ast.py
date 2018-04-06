@@ -1,16 +1,18 @@
 # AST hierarchy
 
 
-# noinspection PyAbstractClass
 from operator import eq
 from opal import types
+from opal.plugin import Plugin
 
 
+# noinspection PyAbstractClass
 class LogicError(Exception):
     pass
 
 
 class ASTNode:
+
     def dump(self):
         raise NotImplementedError
 
@@ -62,7 +64,7 @@ class ExprAST(ASTNode):
     pass
 
 
-class BinaryOp(ASTNode):
+class BinaryOp(ASTNode, metaclass=Plugin):
     op = None
 
     def __init__(self, lhs, rhs):
@@ -82,35 +84,43 @@ class BinaryOp(ASTNode):
         return f'({self.op} {left} {right})'
 
 
-class Mul(BinaryOp):
+class Arithmetic(BinaryOp):
+    pass
+
+
+class Mul(Arithmetic):
     op = '*'
 
 
-class Div(BinaryOp):
+class Div(Arithmetic):
     op = '/'
 
 
-class Add(BinaryOp):
+class Add(Arithmetic):
     op = '+'
 
 
-class Sub(BinaryOp):
+class Sub(Arithmetic):
     op = '-'
 
 
-class GreaterThan(BinaryOp):
+class Comparison(BinaryOp):
+    pass
+
+
+class GreaterThan(Comparison):
     op = '>'
 
 
-class LessThan(BinaryOp):
+class LessThan(Comparison):
     op = '<'
 
 
-class Equals(BinaryOp):
+class Equals(Comparison):
     op = '=='
 
 
-class Unequals(BinaryOp):
+class Unequals(Comparison):
     op = '!='
 
 

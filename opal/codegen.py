@@ -8,7 +8,7 @@ from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
 from opal import operations as ops
 from opal.ast import Program, BinaryOp, Integer, Block, Add, Sub, Mul, Div, Float, String, Print, Boolean, GreaterThan, \
-    LessThan, Equals, Unequals
+    LessThan, Equals, Unequals, Comparison
 
 from opal.types import Int8, Any
 
@@ -42,20 +42,20 @@ class CodeGenerator:
         return str(self.module)
 
     def _add_builtins(self):
-        malloc_ty = ir.FunctionType(Int8.as_llvm.as_pointer(), [Integer.as_llvm])
+        malloc_ty = ir.FunctionType(Int8.as_llvm().as_pointer(), [Integer.as_llvm()])
         ir.Function(self.module, malloc_ty, 'malloc')
 
-        free_ty = ir.FunctionType(Any.as_llvm, [Int8.as_llvm.as_pointer()])
+        free_ty = ir.FunctionType(Any.as_llvm(), [Int8.as_llvm().as_pointer()])
         ir.Function(self.module, free_ty, 'free')
 
-        puts_ty = ir.FunctionType(Integer.as_llvm, [Int8.as_llvm.as_pointer()])
+        puts_ty = ir.FunctionType(Integer.as_llvm(), [Int8.as_llvm().as_pointer()])
         ir.Function(self.module, puts_ty, 'puts')
 
-        int_to_string_ty = ir.FunctionType(Int8.as_llvm.as_pointer(), [Integer.as_llvm, Int8.as_llvm.as_pointer(),
-                                                                       Integer.as_llvm])
+        int_to_string_ty = ir.FunctionType(Int8.as_llvm().as_pointer(), [Integer.as_llvm(), Int8.as_llvm().as_pointer(),
+                                                                         Integer.as_llvm()])
         ir.Function(self.module, int_to_string_ty, 'int_to_string')
 
-        printf_ty = ir.FunctionType(Integer.as_llvm, [Int8.as_llvm.as_pointer()],
+        printf_ty = ir.FunctionType(Integer.as_llvm(), [Int8.as_llvm().as_pointer()],
                                     var_arg=True)
         ir.Function(self.module, printf_ty, 'printf')
 
@@ -134,11 +134,11 @@ class CodeGenerator:
     def const(self, val):
         # has to come first because freaking `isinstance(True, int) == True`
         if isinstance(val, bool):
-            return ir.Constant(Boolean.as_llvm, val and 1 or 0)
+            return ir.Constant(Boolean.as_llvm(), val and 1 or 0)
         if isinstance(val, int):
-            return ir.Constant(Integer.as_llvm, val)
+            return ir.Constant(Integer.as_llvm(), val)
         if isinstance(val, float):
-            return ir.Constant(Float.as_llvm, val)
+            return ir.Constant(Float.as_llvm(), val)
 
         raise NotImplementedError
 
@@ -157,11 +157,11 @@ class CodeGenerator:
             return
 
         # TODO : normalize this so it doesn't depend on both llvm and native types
-        if isinstance(node.val, Integer) or val.type is Integer.as_llvm:
+        if isinstance(node.val, Integer) or val.type is Integer.as_llvm():
             number = self.alloc_and_store(val, val.type)
             number_ptr = self.load(number)
 
-            buffer = self.builder.alloca(ir.ArrayType(Int8.as_llvm, 10))
+            buffer = self.builder.alloca(ir.ArrayType(Int8.as_llvm(), 10))
 
             buffer_ptr = self.gep(buffer, [self.const(0), self.const(0)], inbounds=True)
 
@@ -171,14 +171,14 @@ class CodeGenerator:
             return
 
         # TODO : normalize this so it doesn't depend on both llvm and native types
-        if isinstance(node.val, Float) or val.type is Float.as_llvm:
+        if isinstance(node.val, Float) or val.type is Float.as_llvm():
             percent_g = self.visit_string(String('%g\n'))
             percent_g = self.gep(percent_g, [self.const(0), self.const(0)])
-            percent_g = self.builder.bitcast(percent_g, Int8.as_llvm.as_pointer())
+            percent_g = self.builder.bitcast(percent_g, Int8.as_llvm().as_pointer())
             self.call('printf', [percent_g, val])
             return
 
-        if isinstance(node.val, Boolean) or val.type is Boolean.as_llvm:
+        if isinstance(node.val, Boolean) or val.type is Boolean.as_llvm():
             true = self.insert_const_string('true')
             true = self.gep(true, [self.const(0), self.const(0)])
             false = self.insert_const_string('false')
@@ -204,8 +204,8 @@ class CodeGenerator:
 
         op = node.op
 
-        if isinstance(node, (Add, Sub, Mul, Div, GreaterThan, LessThan, Equals, Unequals)):
-            if left.type == Integer.as_llvm and right.type == Integer.as_llvm:
+        if isinstance(node, BinaryOp):
+            if left.type == Integer.as_llvm() and right.type == Integer.as_llvm():
                 return ops.int_ops(self.builder, left, right, node)
             return ops.float_ops(self.builder, left, right, node)
 
@@ -280,12 +280,7 @@ class ASTVisitor(InlineTransformer):
         return Boolean(const.value == 'true')
 
     def comp(self, lhs, op, rhs):
-        return {
-            GreaterThan.op: GreaterThan,
-            LessThan.op: LessThan,
-            Equals.op: Equals,
-            Unequals.op: Unequals,
-        }[op.value](lhs, rhs)
+        return Comparison.by_op(op.value)(lhs, rhs)
 
     # noinspection PyUnusedLocal
     def term(self, nl):

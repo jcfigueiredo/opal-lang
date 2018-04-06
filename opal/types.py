@@ -3,20 +3,12 @@ import llvmlite.ir as ir
 INT = 'Int'
 
 
-class MetaType(type):
-    _llvm_type = None
-    #
-    # @property
-    # def name(self):
-    #     return self.__class__.__name__
-
-    @property
-    def as_llvm(self):
-        return self._llvm_type
-
-
-class Any(metaclass=MetaType):
+class Any:
     _llvm_type = ir.VoidType()
+
+    @classmethod
+    def as_llvm(cls):
+        return cls._llvm_type
 
 
 class Boolean(Any):

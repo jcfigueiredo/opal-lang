@@ -1,6 +1,8 @@
+
 from llvmlite import ir
 
-from opal.ast import Program, Add, Integer, Block, Mul, LogicError, Float, String, Print
+from opal.ast import Program, Add, Integer, Block, Mul, LogicError, Float, String, Print, Comparison, Equals, Unequals, \
+    GreaterThan, LessThan, Sub, Div, Arithmetic
 from opal.codegen import ASTVisitor
 from opal.parser import parser
 
@@ -142,7 +144,7 @@ class TestIntegerNodes:
         v1.val.should.be.a(int)
 
     def test_has_a_llvm_representation(self):
-        Integer.as_llvm.should.be.equal(ir.IntType(32))
+        Integer.as_llvm().should.be.equal(ir.IntType(32))
 
     def test_can_be_compared(self):
         Integer(1).should.be.equal(Integer(1))
@@ -155,7 +157,7 @@ class TestFloatNodes:
         v1.val.should.be.a(float)
 
     def test_has_a_llvm_representation(self):
-        Float.as_llvm.should.be.equal(ir.DoubleType())
+        Float.as_llvm().should.be.equal(ir.DoubleType())
 
     def test_can_be_compared(self):
         Float(10.135).should.be.equal(Float(10.135))
@@ -168,7 +170,7 @@ class TestStringNodes:
         v1.val.should.be.a(str)
 
     def test_has_a_llvm_representation(self):
-        String.as_llvm.should.be.equal(ir.IntType(8).as_pointer)
+        String.as_llvm().should.be.equal(ir.IntType(8).as_pointer)
 
 
 class TestPrintNodes:
@@ -191,6 +193,24 @@ class TestValueNodes:
     def test_distinguish_by_type(self):
         Integer(1).should_not.be.equal(Float(1.0))
         Float(1.0).should_not.be.equal(Integer(1))
+
+
+class TestComparisonNodes:
+    # noinspection PyStatementEffect
+    def test_knows_about_its_inheritors(self):
+        (Equals in Comparison).should.be.true
+        (Unequals in Comparison).should.be.true
+        (GreaterThan in Comparison).should.be.true
+        (LessThan in Comparison).should.be.true
+
+
+class TestArithmeticNodes:
+    # noinspection PyStatementEffect
+    def test_knows_about_its_inheritors(self):
+        (Add in Arithmetic).should.be.true
+        (Sub in Arithmetic).should.be.true
+        (Mul in Arithmetic).should.be.true
+        (Div in Arithmetic).should.be.true
 
 
 class TestBinaryOperationNodes:
