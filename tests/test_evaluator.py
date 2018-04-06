@@ -277,6 +277,38 @@ class TestComparison:
         out.should.contain('true')
         out.should.contain('false')
 
+    def test_should_work_for_integer_inequality(self):
+        expr = f"""
+        print(3 != 3)
+        print(3 != 8)
+        """
+
+        ev = OpalEvaluator()
+
+        with pipes() as (out, _):
+            ev.evaluate(expr)
+
+        out = out.read()
+
+        out.should.contain('false')
+        out.should.contain('true')
+
+    def test_should_work_for_float_inequality(self):
+        expr = f"""
+        print(3.0 != 3.0)
+        print(0.3 != 0.8)
+        """
+
+        ev = OpalEvaluator()
+
+        with pipes() as (out, _):
+            ev.evaluate(expr)
+
+        out = out.read()
+
+        out.should.contain('false')
+        out.should.contain('true')
+
 
 class TestRegression:
     def test_simple_division(self):

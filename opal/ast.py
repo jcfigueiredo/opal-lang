@@ -110,6 +110,10 @@ class Equals(BinaryOp):
     op = '=='
 
 
+class Unequals(BinaryOp):
+    op = '!='
+
+
 # noinspection PyAbstractClass
 class Value(ExprAST):
     val = None

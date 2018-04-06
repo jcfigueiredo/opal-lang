@@ -1,6 +1,6 @@
 from llvmlite import ir
 
-from opal.ast import Add, Sub, Mul, Div, GreaterThan, LessThan, Equals
+from opal.ast import Add, Sub, Mul, Div, GreaterThan, LessThan, Equals, Unequals
 
 
 def int_ops(builder, left, right, node):
@@ -14,7 +14,7 @@ def int_ops(builder, left, right, node):
         return builder.mul(left, right, 'multmp')
     elif isinstance(node, Div):
         return builder.sdiv(left, right, 'divtmp')
-    elif isinstance(node, (GreaterThan, LessThan, Equals)):
+    elif isinstance(node, (GreaterThan, LessThan, Equals, Unequals)):
         return builder.icmp_signed(op, left, right, 'booltmp')
 
     raise SyntaxError('Unknown binary operator', op)
@@ -32,7 +32,7 @@ def float_ops(builder, left, right, node):
     elif isinstance(node, Div):
         return builder.udiv(builder.fptosi(left, ir.IntType(64)),
                             builder.fptosi(right, ir.IntType(64)), 'ffloordivtmp')
-    elif isinstance(node, (GreaterThan, LessThan, Equals)):
+    elif isinstance(node, (GreaterThan, LessThan, Equals, Unequals)):
         return builder.fcmp_ordered(op, left, right, 'booltmp')
 
     raise SyntaxError('Unknown binary operator', op)

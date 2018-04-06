@@ -85,6 +85,12 @@ class TestDumpingExpressions:
         prog = parse("0.212 == 2.19")
         prog.dump().should.contain('(Block\n  (== 0.212 2.19))')
 
+        prog = parse("12 != 29")
+        prog.dump().should.contain('(Block\n  (!= 12 29))')
+
+        prog = parse("0.212 != 2.19")
+        prog.dump().should.contain('(Block\n  (!= 0.212 2.19))')
+
         # won't be implement this for a while, even if the syntax supports
         prog = parse("'one' < 'two'")
         prog.dump().should.contain('(Block\n  (< one two))')

@@ -179,4 +179,15 @@ class TestLarkParser:
         res.should.contain('instruction comp int 12 == int 24')
         res.should.contain('instruction comp float 23.4 == float 5.67')
 
+    def test_compares_unequal(self):
+        expr = """
+        12 != 24
+        23.4 != 5.67
+        """
+
+        prog = self.get_parser().parse(expr)
+        res = self.parsed_representation(prog)
+        res.should.contain('instruction comp int 12 != int 24')
+        res.should.contain('instruction comp float 23.4 != float 5.67')
+
 

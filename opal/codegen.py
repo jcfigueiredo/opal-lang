@@ -8,7 +8,7 @@ from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
 from opal import operations as ops
 from opal.ast import Program, BinaryOp, Integer, Block, Add, Sub, Mul, Div, Float, String, Print, Boolean, GreaterThan, \
-    LessThan, Equals
+    LessThan, Equals, Unequals
 
 from opal.types import Int8, Any
 
@@ -204,7 +204,7 @@ class CodeGenerator:
 
         op = node.op
 
-        if isinstance(node, (Add, Sub, Mul, Div, GreaterThan, LessThan, Equals)):
+        if isinstance(node, (Add, Sub, Mul, Div, GreaterThan, LessThan, Equals, Unequals)):
             if left.type == Integer.as_llvm and right.type == Integer.as_llvm:
                 return ops.int_ops(self.builder, left, right, node)
             return ops.float_ops(self.builder, left, right, node)
@@ -284,6 +284,7 @@ class ASTVisitor(InlineTransformer):
             GreaterThan.op: GreaterThan,
             LessThan.op: LessThan,
             Equals.op: Equals,
+            Unequals.op: Unequals,
         }[op.value](lhs, rhs)
 
     # noinspection PyUnusedLocal
