@@ -112,8 +112,16 @@ class GreaterThan(Comparison):
     op = '>'
 
 
+class GreaterThanEqual(Comparison):
+    op = '>='
+
+
 class LessThan(Comparison):
     op = '<'
+
+
+class LessThanEqual(Comparison):
+    op = '=<'
 
 
 class Equals(Comparison):
