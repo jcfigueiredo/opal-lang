@@ -216,19 +216,18 @@ class TestComparisonNodes:
         (LessThan in Comparison).should.be.true
 
     def test_can_be_found_by_its_operation(self):
-        BinaryOp.by_op('+').should.be.equal(Add)
-        BinaryOp.by_op('-').should.be.equal(Sub)
-        BinaryOp.by_op('*').should.be.equal(Mul)
-        BinaryOp.by_op('/').should.be.equal(Div)
-        BinaryOp.by_op('==').should.be.equal(Equals)
-        BinaryOp.by_op('>').should.be.equal(GreaterThan)
-        BinaryOp.by_op('>=').should.be.equal(GreaterThanEqual)
-        BinaryOp.by_op('<').should.be.equal(LessThan)
-        BinaryOp.by_op('<=').should.be.equal(LessThanEqual)
+        BinaryOp.by('+').should.be.equal(Add)
+        BinaryOp.by('-').should.be.equal(Sub)
+        BinaryOp.by('*').should.be.equal(Mul)
+        BinaryOp.by('/').should.be.equal(Div)
+        BinaryOp.by('==').should.be.equal(Equals)
+        BinaryOp.by('>').should.be.equal(GreaterThan)
+        BinaryOp.by('>=').should.be.equal(GreaterThanEqual)
+        BinaryOp.by('<').should.be.equal(LessThan)
+        BinaryOp.by('<=').should.be.equal(LessThanEqual)
 
     def test_handles_future_operations(self):
-
-        BinaryOp.by_op('@').should.be.equal(None)
+        BinaryOp.by('@').should.be.equal(None)
 
 
 class TestArithmeticNodes:

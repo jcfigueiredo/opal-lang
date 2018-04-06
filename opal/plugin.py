@@ -21,7 +21,7 @@ class Plugin(type):
     def __iter__(cls):
         return iter(cls.__inheritors__[cls])
 
-    def by_op(cls, op):
+    def by(cls, op):
         for klass in cls.registry:
             if klass.op == op:
                 return klass
