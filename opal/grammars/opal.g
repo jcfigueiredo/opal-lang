@@ -16,8 +16,10 @@ instruction: sum
 ?atom: atom _comp_op atom -> comp
     | const
     | "(" sum ")"
-    | id "=" atom -> assign
+    |  assign
 
+assign: id "=" atom
+    | id "=" id
 
 !_comp_op: ">"|"<"|">="|"<="|"=="|"!="
 
