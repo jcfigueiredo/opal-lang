@@ -16,41 +16,41 @@ class TestLarkParser:
         res = re.sub(r"\s+", ' ', res)
         return res[:-1]
 
+    def eval(self, expr):
+        prog = self.get_parser().parse(expr)
+        res = self.parsed_representation(prog)
+        return res
+
     def test_handles_integers(self):
         expr = "1"
 
-        prog = self.get_parser().parse(expr)
-        res = self.parsed_representation(prog)
+        res = self.eval(expr)
 
         res.should.equal('program block instruction int 1')
 
     def test_handles_floats(self):
         expr = "1.2"
 
-        prog = self.get_parser().parse(expr)
-        res = self.parsed_representation(prog)
+        res = self.eval(expr)
 
         res.should.equal('program block instruction float 1.2')
 
     def test_handles_strings(self):
         expr = "'andrea'"
 
-        prog = self.get_parser().parse(expr)
-        res = self.parsed_representation(prog)
+        res = self.eval(expr)
         res.should.equal('program block instruction string \'andrea\'')
 
     def test_handles_booleans_true(self):
         expr = "true"
 
-        prog = self.get_parser().parse(expr)
-        res = self.parsed_representation(prog)
+        res = self.eval(expr)
         res.should.equal('program block instruction boolean true')
 
     def test_handles_booleans_false(self):
         expr = "false"
 
-        prog = self.get_parser().parse(expr)
-        res = self.parsed_representation(prog)
+        res = self.eval(expr)
         res.should.equal('program block instruction boolean false')
 
     def test_multi_line(self):
@@ -85,48 +85,42 @@ class TestLarkParser:
     def test_adds_int(self):
         expr = "9 + 4"
 
-        prog = self.get_parser().parse(expr)
-        res = self.parsed_representation(prog)
+        res = self.eval(expr)
 
         res.should.equal('program block instruction add int 9 int 4')
 
     def test_adds_float(self):
         expr = "22.3 + 5.67"
 
-        prog = self.get_parser().parse(expr)
-        res = self.parsed_representation(prog)
+        res = self.eval(expr)
 
         res.should.equal('program block instruction add float 22.3 float 5.67')
 
     def test_print_string(self):
         expr = "print('hi ho')"
 
-        prog = self.get_parser().parse(expr)
-        res = self.parsed_representation(prog)
+        res = self.eval(expr)
 
         res.should.equal('program block instruction print string \'hi ho\'')
 
     def test_print_integer(self):
         expr = "print(1)"
 
-        prog = self.get_parser().parse(expr)
-        res = self.parsed_representation(prog)
+        res = self.eval(expr)
 
         res.should.equal('program block instruction print int 1')
 
     def test_print_float(self):
         expr = "print(1.2)"
 
-        prog = self.get_parser().parse(expr)
-        res = self.parsed_representation(prog)
+        res = self.eval(expr)
 
         res.should.equal('program block instruction print float 1.2')
 
     def test_print_expressions(self):
         expr = "print(1 + 2 * 3)"
 
-        prog = self.get_parser().parse(expr)
-        res = self.parsed_representation(prog)
+        res = self.eval(expr)
 
         res.should.equal('program block instruction print add int 1 mul int 2 int 3')
 
@@ -135,8 +129,7 @@ class TestLarkParser:
         240 / 24
         """
 
-        prog = self.get_parser().parse(expr)
-        res = self.parsed_representation(prog)
+        res = self.eval(expr)
 
         res.should.equal('program block instruction div int 240 int 24')
 
@@ -146,8 +139,7 @@ class TestLarkParser:
         240 + 24
         """
 
-        prog = self.get_parser().parse(expr)
-        res = self.parsed_representation(prog)
+        res = self.eval(expr)
 
         res.should.contain('instruction div int 240 int 24')
         res.should.contain('instruction add int 240 int 24')
@@ -160,8 +152,7 @@ class TestLarkParser:
         10.11 < 12.43
         """
 
-        prog = self.get_parser().parse(expr)
-        res = self.parsed_representation(prog)
+        res = self.eval(expr)
         res.should.contain('instruction comp int 24123 > int 24')
         res.should.contain('instruction comp int 10 < int 12')
 
@@ -176,8 +167,7 @@ class TestLarkParser:
         10.11 <= 12.43
         """
 
-        prog = self.get_parser().parse(expr)
-        res = self.parsed_representation(prog)
+        res = self.eval(expr)
         res.should.contain('instruction comp int 24123 >= int 24')
         res.should.contain('instruction comp int 10 <= int 12')
 
@@ -190,8 +180,7 @@ class TestLarkParser:
         23.4 == 5.67
         """
 
-        prog = self.get_parser().parse(expr)
-        res = self.parsed_representation(prog)
+        res = self.eval(expr)
         res.should.contain('instruction comp int 12 == int 24')
         res.should.contain('instruction comp float 23.4 == float 5.67')
 
@@ -201,9 +190,20 @@ class TestLarkParser:
         23.4 != 5.67
         """
 
-        prog = self.get_parser().parse(expr)
-        res = self.parsed_representation(prog)
+        res = self.eval(expr)
         res.should.contain('instruction comp int 12 != int 24')
         res.should.contain('instruction comp float 23.4 != float 5.67')
+
+    def test_assigns_variable(self):
+        expr = """
+        alpha = 123
+        beta = 23.45
+        gamma = "a j g"
+        """
+
+        res = self.eval(expr)
+        res.should.contain('instruction assign alpha int 123')
+        res.should.contain('instruction assign beta float 23.45')
+        res.should.contain('instruction assign gamma string "a j g"')
 
 

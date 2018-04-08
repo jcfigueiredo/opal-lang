@@ -5,6 +5,7 @@ block: instruction
 
 instruction: sum
 
+
 ?sum: "print" "(" sum ")" -> print
     | product
     | sum "+" product   -> add
@@ -15,6 +16,8 @@ instruction: sum
 ?atom: atom _comp_op atom -> comp
     | const
     | "(" sum ")"
+    | id "=" atom -> assign
+
 
 !_comp_op: ">"|"<"|">="|"<="|"=="|"!="
 
@@ -29,6 +32,10 @@ float: FLOAT
 int: INT
 string: STRING
 !boolean: "true" | "false"
+
+?id: ID
+
+ID : /[a-zA-Z][a-zA-Z0-9_]*/
 
 INT: ["+"|"-"] DIGIT+
 FLOAT: ["+"|"-"] INT "." INT
