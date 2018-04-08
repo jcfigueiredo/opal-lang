@@ -105,9 +105,21 @@ class TestDumpingExpressions:
         prog = parse("1.2 <= 2.9")
         prog.dump().should.contain('(Block\n  (<= 1.2 2.9))')
 
+        prog = parse("one = 1")
+        prog.dump().should.contain('(Block\n  (= one 1))')
+
+        prog = parse("twotwo = 2.2")
+        prog.dump().should.contain('(Block\n  (= twotwo 2.2))')
+
+        prog = parse('some = "string"')
+        prog.dump().should.contain('(Block\n  (= some "string"))')
+
+        prog = parse('v1 = v2')
+        prog.dump().should.contain('(Block\n  (= v1 v2))')
+
         # won't be implement this for a while, even if the syntax supports
         prog = parse("'one' < 'two'")
-        prog.dump().should.contain('(Block\n  (< one two))')
+        prog.dump().should.contain('(Block\n  (< "one" "two"))')
 
 
 class TestComparingNodes:
@@ -214,6 +226,8 @@ class TestComparisonNodes:
         (Unequals in Comparison).should.be.true
         (GreaterThan in Comparison).should.be.true
         (LessThan in Comparison).should.be.true
+        (GreaterThanEqual in Comparison).should.be.true
+        (LessThanEqual in Comparison).should.be.true
 
     def test_can_be_found_by_its_operation(self):
         BinaryOp.by('+').should.be.equal(Add)
@@ -221,12 +235,13 @@ class TestComparisonNodes:
         BinaryOp.by('*').should.be.equal(Mul)
         BinaryOp.by('/').should.be.equal(Div)
         BinaryOp.by('==').should.be.equal(Equals)
+        BinaryOp.by('!=').should.be.equal(Unequals)
         BinaryOp.by('>').should.be.equal(GreaterThan)
         BinaryOp.by('>=').should.be.equal(GreaterThanEqual)
         BinaryOp.by('<').should.be.equal(LessThan)
         BinaryOp.by('<=').should.be.equal(LessThanEqual)
 
-    def test_handles_future_operations(self):
+    def test_handles_unsupported_operations(self):
         BinaryOp.by('@').should.be.equal(None)
 
 

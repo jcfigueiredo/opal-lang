@@ -18,8 +18,10 @@ instruction: sum
     | "(" sum ")"
     |  assign
 
-assign: id "=" atom
-    | id "=" id
+assign: var "=" atom
+    | var "=" var
+
+var: id
 
 !_comp_op: ">"|"<"|">="|"<="|"=="|"!="
 

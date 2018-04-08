@@ -81,7 +81,15 @@ class BinaryOp(ASTNode, metaclass=Plugin):
     def dump(self):
         left = self.lhs.val if isinstance(self.lhs, Value) else self.lhs.dump()
         right = self.rhs.val if isinstance(self.rhs, Value) else self.rhs.dump()
+        if isinstance(self.lhs, String):
+            left = f'"{left}"'
+        if isinstance(self.rhs, String):
+            right = f'"{right}"'
         return f'({self.op} {left} {right})'
+
+
+class Assign(BinaryOp):
+    op = '='
 
 
 class Arithmetic(BinaryOp):
@@ -197,5 +205,10 @@ class Float(Value, types.Float):
 
 
 class String(Value, types.String):
+    def __init__(self, val):
+        self.val = val
+
+
+class Var(Value):
     def __init__(self, val):
         self.val = val

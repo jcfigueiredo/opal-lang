@@ -8,7 +8,7 @@ from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
 from opal import operations as ops
 from opal.ast import Program, BinaryOp, Integer, Block, Add, Sub, Mul, Div, Float, String, Print, Boolean, GreaterThan, \
-    LessThan, Equals, Unequals, Comparison
+    LessThan, Equals, Unequals, Comparison, Assign, Var
 
 from opal.types import Int8, Any
 
@@ -251,6 +251,12 @@ class ASTVisitor(InlineTransformer):
         if isinstance(a, Token):
             return None
         return a
+
+    def assign(self, lhs, rhs):
+        return Assign(lhs, rhs)
+
+    def var(self, id_):
+        return Var(id_.value)
 
     def print(self, expr):
         return Print(expr)
