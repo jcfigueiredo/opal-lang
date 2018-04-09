@@ -17,6 +17,8 @@ PRIVATE_LINKAGE = 'private'
 
 class CodeGenerator:
     def __init__(self):
+        self.symtab = {}
+
         self.module = Module(name='opal-lang')
         self.blocks = []
 
@@ -151,7 +153,21 @@ class CodeGenerator:
     def visit_print(self, node):
         val = self.visit(node.val)
 
-        if isinstance(node.val, String):
+        typ = None
+
+        if isinstance(val, Var):
+            typ, name = self.symtab[val.val]
+            val = self.load(name)
+        elif isinstance(node.val, String):
+            typ = String
+        elif isinstance(node.val, Integer) or val.type is Integer.as_llvm():
+            typ = Integer
+        elif isinstance(node.val, Float) or val.type is Float.as_llvm():
+            typ = Float
+        elif isinstance(node.val, Boolean) or val.type is Boolean.as_llvm():
+            typ = Boolean
+
+        if typ is String:
             # Cast to a i8* pointer
             char_ty = val.type.pointee.element
             str_ptr = self.builder.bitcast(val, char_ty.as_pointer())
@@ -159,8 +175,7 @@ class CodeGenerator:
             self.call('puts', [str_ptr])
             return
 
-        # TODO : normalize this so it doesn't depend on both llvm and native types
-        if isinstance(node.val, Integer) or val.type is Integer.as_llvm():
+        if typ is Integer:
             number = self.alloc_and_store(val, val.type)
             number_ptr = self.load(number)
 
@@ -173,15 +188,14 @@ class CodeGenerator:
             self.call('puts', [buffer_ptr])
             return
 
-        # TODO : normalize this so it doesn't depend on both llvm and native types
-        if isinstance(node.val, Float) or val.type is Float.as_llvm():
+        if typ is Float:
             percent_g = self.visit_string(String('%g\n'))
             percent_g = self.gep(percent_g, [self.const(0), self.const(0)])
             percent_g = self.builder.bitcast(percent_g, Int8.as_llvm().as_pointer())
             self.call('printf', [percent_g, val])
             return
 
-        if isinstance(node.val, Boolean) or val.type is Boolean.as_llvm():
+        if typ is Boolean:
             true = self.insert_const_string('true')
             true = self.gep(true, [self.const(0), self.const(0)])
             false = self.insert_const_string('false')
@@ -209,10 +223,16 @@ class CodeGenerator:
         left = self.visit(node.lhs)
         right = self.visit(node.rhs)
 
-        if isinstance(node.rhs, String):
-            return self.alloc_and_store(right, right.type, name=left.val)
+        name = left.val
 
-        return self.alloc_and_store(right, node.rhs.as_llvm(), name=left.val)
+        if isinstance(node.rhs, String):
+            var_address = self.alloc_and_store(right, right.type, name=name)
+        else:
+            var_address = self.alloc_and_store(right, node.rhs.as_llvm(), name=name)
+
+        self.symtab[name] = (node.rhs.__class__, var_address)
+
+        return var_address
 
     def visit_binop(self, node):
 
@@ -310,8 +330,3 @@ class ASTVisitor(InlineTransformer):
         if not node:
             raise SyntaxError(f'The operation [{op}] is not supported.')
         return node(lhs, rhs)
-
-    # noinspection PyUnusedLocal
-    def term(self, nl):
-        # newlines handler
-        return None

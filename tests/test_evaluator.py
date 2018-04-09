@@ -220,21 +220,66 @@ class TestPrinting:
         out.should.contain('false')
 
 
-# class TestPrintingVariable:
-#     def test_works_for_integers(self):
-#         expr = """
-#         alpha = 123
-#         print(alpha)
-#         """
-#
-#         ev = OpalEvaluator()
-#
-#         with pipes() as (out, _):
-#             ev.evaluate(expr)
-#
-#         out = out.read()
-#
-#         out.should.contain('123')
+class TestPrintingVariable:
+    def test_works_for_integers(self):
+        expr = """
+        alpha = 123
+        print(alpha)
+        """
+
+        ev = OpalEvaluator()
+
+        with pipes() as (out, _):
+            ev.evaluate(expr)
+
+        out = out.read()
+
+        out.should.contain('123')
+
+    def test_works_for_floats(self):
+        expr = """
+        beta = 12.3
+        print(beta)
+        """
+
+        ev = OpalEvaluator()
+
+        with pipes() as (out, _):
+            ev.evaluate(expr)
+
+        out = out.read()
+
+        out.should.contain('12.3')
+
+    def test_works_for_strings(self):
+        expr = """
+        gamma = "so be it"
+        print(gamma)
+        """
+
+        ev = OpalEvaluator()
+
+        with pipes() as (out, _):
+            ev.evaluate(expr)
+
+        out = out.read()
+
+        out.should.contain('so be it')
+    #
+    # def test_works_for_booleans(self):
+    #     expr = """
+    #     delta = true
+    #     print(delta)
+    #     """
+    #
+    #     ev = OpalEvaluator()
+    #
+    #     with pipes() as (out, _):
+    #         ev.evaluate(expr)
+    #
+    #     out = out.read()
+    #
+    #     out.should.contain('true')
 
 
 class TestComparison:
