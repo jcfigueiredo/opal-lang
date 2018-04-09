@@ -9,10 +9,11 @@ instruction: sum
 ?statements: assign
     | print_stmt -> print
 
-?print_stmt: "print" "(" sum ")"
-    | "print" "(" boolean ")"
+?print_stmt: "print" "(" boolean ")" // hack?
+    | "print" "(" sum ")"
 
-?sum: product
+?sum: var
+    | product
     | sum "+" product   -> add
     | sum "-" product   -> sub
 ?product: atom
@@ -20,33 +21,36 @@ instruction: sum
     | product "/" atom  -> div
 ?atom: atom _comp_op atom -> comp
     | const
-    | ID -> var
-    | boolean
     | "(" sum ")"
 
-assign: ID "=" sum
-    | ID "=" ID
+assign: var "=" sum
+    | var "=" var
+
+?var: id
 
 !_comp_op: ">"|"<"|">="|"<="|"=="|"!="
 
-?const: number | string
+// !_add_op: "+"|"-"
+// !_mul_op: "*"|"@"|"/"|"%"|"//"
+
+?const: number | string | boolean
 
 ?number: float | int
 
 float: FLOAT
 int: INT
 string: STRING
-boolean: BOOLEAN
+!boolean: "true" | "false"
 
-ID : /[a-zA-Z][a-zA-Z0-9_]\w*/
-// bug on lark forces this to be a regex
-BOOLEAN.2: /true|false/
+?id: ID
+
+ID : /[a-zA-Z][a-zA-Z0-9_]*/
 
 INT: ["+"|"-"] DIGIT+
-FLOAT   : ["+"|"-"] INT "." INT
-STRING  : /("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/i
+FLOAT: ["+"|"-"] INT "." INT
+STRING : /("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/i
 
-?term   : NEWLINE
+?term: NEWLINE
 
 %import common.DIGIT
 %import common.NEWLINE
