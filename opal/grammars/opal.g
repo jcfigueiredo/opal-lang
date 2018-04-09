@@ -4,10 +4,12 @@ block: instruction
      | (instruction term)*
 
 instruction: sum
+    | statements
+
+statements: "print" "(" sum ")" -> print
 
 
-?sum: "print" "(" sum ")" -> print
-    | product
+?sum: product
     | sum "+" product   -> add
     | sum "-" product   -> sub
 ?product: atom
@@ -18,7 +20,7 @@ instruction: sum
     | "(" sum ")"
     |  assign
 
-assign: var "=" atom
+assign: var "=" sum
     | var "=" var
 
 ?var: id
