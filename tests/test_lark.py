@@ -202,9 +202,9 @@ class TestLarkParser:
         """
 
         res = self.eval(expr)
-        res.should.contain('instruction assign var alpha int 123')
-        res.should.contain('instruction assign var beta float 23.45')
-        res.should.contain('instruction assign var gamma string "a j g"')
+        res.should.contain('instruction assign alpha int 123')
+        res.should.contain('instruction assign beta float 23.45')
+        res.should.contain('instruction assign gamma string "a j g"')
 
     def test_assigns_variable_to_variable(self):
         expr = """
@@ -212,4 +212,4 @@ class TestLarkParser:
         """
 
         res = self.eval(expr)
-        res.should.contain('instruction assign var alpha var beta')
+        res.should.contain('instruction assign alpha beta')

@@ -74,6 +74,26 @@ class TestExternal:
         ev.llvm_mod.get_function('int_to_string').should.be.truthy
 
 
+class TestAssigning:
+    def test_stores_the_right_value_for_ints(self):
+        ev = OpalEvaluator()
+        ev.evaluate('alpha = 1', run=False)
+        str(ev.llvm_mod).should.contain('%alpha = alloca i32')
+        str(ev.llvm_mod).should.contain('store i32 1, i32* %alpha')
+
+    def test_stores_the_right_value_for_floats(self):
+        ev = OpalEvaluator()
+        ev.evaluate('beta = 2.3', run=False)
+        str(ev.llvm_mod).should.contain('%beta = alloca double')
+        str(ev.llvm_mod).should.contain('store double 2.300000e+00, double* %beta')
+
+    def test_stores_the_right_value_for_strings(self):
+        ev = OpalEvaluator()
+        ev.evaluate('gamma = "bon appetit"', run=False)
+        str(ev.llvm_mod).should.contain('%gamma = alloca [12 x i8]*')
+        str(ev.llvm_mod).should.contain('store [12 x i8]* @str_2f274d89cb7f072099747f894e80986616b2e81cc8e02711ef7c78db956d1fca, [12 x i8]** %gamma')
+
+
 class TestPrinting:
     def test_works_for_strings(self):
         something_complete = f"""printing string"""

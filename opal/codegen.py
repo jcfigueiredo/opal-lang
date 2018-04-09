@@ -108,10 +108,13 @@ class CodeGenerator:
         if isinstance(node, Integer) or isinstance(node, Float) or isinstance(node, Boolean):
             return self.visit_value(node)
 
-        if isinstance(node, BinaryOp):
-            return self.visit_binop(node)
-
         method = 'visit_' + type(node).__name__.lower()
+
+        if isinstance(node, BinaryOp):
+            visit_specific_binop = getattr(self, method, None)
+            if visit_specific_binop:
+                return visit_specific_binop(node)
+            return self.visit_binop(node)
 
         return getattr(self, method, self.generic_codegen)(node)
 
@@ -198,7 +201,21 @@ class CodeGenerator:
 
         raise NotImplementedError(f'can\'t print {node.val}')
 
+    # noinspection PyMethodMayBeStatic
+    def visit_var(self, node):
+        return node.val
+
+    def visit_assign(self, node):
+        left = self.visit(node.lhs)
+        right = self.visit(node.rhs)
+
+        if isinstance(node.rhs, String):
+            return self.alloc_and_store(right, right.type, name=left)
+
+        return self.alloc_and_store(right, node.rhs.as_llvm(), name=left)
+
     def visit_binop(self, node):
+
         left = self.visit(node.lhs)
         right = self.visit(node.rhs)
 
@@ -253,6 +270,9 @@ class ASTVisitor(InlineTransformer):
         return a
 
     def assign(self, lhs, rhs):
+        lhs = Var(lhs.value)
+        if isinstance(rhs, Token):
+            rhs = Var(rhs.value)
         return Assign(lhs, rhs)
 
     def var(self, id_):

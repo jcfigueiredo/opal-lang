@@ -21,7 +21,7 @@ instruction: sum
 assign: var "=" atom
     | var "=" var
 
-var: id
+?var: id
 
 !_comp_op: ">"|"<"|">="|"<="|"=="|"!="
 
