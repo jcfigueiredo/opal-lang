@@ -6,10 +6,14 @@ block: instruction
 instruction: sum
     | statements
 
-statements: "print" "(" sum ")" -> print
+?statements: assign
+    | print_stmt -> print
 
+?print_stmt: "print" "(" boolean ")" // hack?
+    | "print" "(" sum ")"
 
-?sum: product
+?sum: var
+    | product
     | sum "+" product   -> add
     | sum "-" product   -> sub
 ?product: atom
@@ -18,7 +22,6 @@ statements: "print" "(" sum ")" -> print
 ?atom: atom _comp_op atom -> comp
     | const
     | "(" sum ")"
-    |  assign
 
 assign: var "=" sum
     | var "=" var

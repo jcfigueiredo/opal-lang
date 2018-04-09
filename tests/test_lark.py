@@ -209,10 +209,24 @@ class TestLarkParser:
     def test_assigns_variable_to_expression(self):
         expr = """
         alpha = 1 + 4
+        beta = 2 * 3 / 4 - 1
+        delta =  2 * (3 / (4 - 1))
         """
 
         res = self.eval(expr)
         res.should.contain('instruction assign alpha add int 1 int 4')
+        res.should.contain('instruction assign beta sub div mul int 2 int 3 int 4 int 1')
+        res.should.contain('instruction assign delta mul int 2 div int 3 sub int 4 int 1')
+
+    def test_prints_variables(self):
+        expr = """
+        alpha = 1 + 4
+        print(alpha)
+        """
+
+        res = self.eval(expr)
+        res.should.contain('instruction assign alpha add int 1 int 4')
+        res.should.contain('instruction print alpha')
 
     def test_assigns_variable_to_variable(self):
         expr = """
