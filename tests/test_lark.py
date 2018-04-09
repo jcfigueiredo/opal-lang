@@ -1,7 +1,8 @@
 import re
 
 # from lark.tree import pydot__tree_to_png  # Just a neat utility function
-# pydot__tree_to_png(res, "opal-grammar.png")
+# pydot__tree_to_png(self.get_parser().parse(expr), "opal-grammar.png")
+
 from opal.parser import parser
 
 
@@ -45,6 +46,7 @@ class TestLarkParser:
         expr = "true"
 
         res = self.eval(expr)
+
         res.should.equal('program block instruction boolean true')
 
     def test_handles_booleans_false(self):
@@ -199,12 +201,14 @@ class TestLarkParser:
         alpha = 123
         beta = 23.45
         gamma = "a j g"
+        delta = true
         """
 
         res = self.eval(expr)
         res.should.contain('instruction assign alpha int 123')
         res.should.contain('instruction assign beta float 23.45')
         res.should.contain('instruction assign gamma string "a j g"')
+        res.should.contain('instruction assign delta true')
 
     def test_assigns_variable_to_expression(self):
         expr = """
@@ -226,7 +230,7 @@ class TestLarkParser:
 
         res = self.eval(expr)
         res.should.contain('instruction assign alpha add int 1 int 4')
-        res.should.contain('instruction print alpha')
+        res.should.contain('instruction print var alpha')
 
     def test_assigns_variable_to_variable(self):
         expr = """
@@ -234,4 +238,4 @@ class TestLarkParser:
         """
 
         res = self.eval(expr)
-        res.should.contain('instruction assign alpha beta')
+        res.should.contain('instruction assign alpha var beta')
