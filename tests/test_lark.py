@@ -1,7 +1,8 @@
 import re
 
 # from lark.tree import pydot__tree_to_png  # Just a neat utility function
-# pydot__tree_to_png(res, "opal-grammar.png")
+# pydot__tree_to_png(self.get_parser().parse(expr), "opal-grammar.png")
+
 from opal.parser import parser
 
 
@@ -45,6 +46,7 @@ class TestLarkParser:
         expr = "true"
 
         res = self.eval(expr)
+
         res.should.equal('program block instruction boolean true')
 
     def test_handles_booleans_false(self):
@@ -199,20 +201,36 @@ class TestLarkParser:
         alpha = 123
         beta = 23.45
         gamma = "a j g"
+        delta = true
         """
 
         res = self.eval(expr)
         res.should.contain('instruction assign alpha int 123')
         res.should.contain('instruction assign beta float 23.45')
         res.should.contain('instruction assign gamma string "a j g"')
+        res.should.contain('instruction assign delta true')
 
     def test_assigns_variable_to_expression(self):
         expr = """
         alpha = 1 + 4
+        beta = 2 * 3 / 4 - 1
+        delta =  2 * (3 / (4 - 1))
         """
 
         res = self.eval(expr)
         res.should.contain('instruction assign alpha add int 1 int 4')
+        res.should.contain('instruction assign beta sub div mul int 2 int 3 int 4 int 1')
+        res.should.contain('instruction assign delta mul int 2 div int 3 sub int 4 int 1')
+
+    def test_prints_variables(self):
+        expr = """
+        alpha = 1 + 4
+        print(alpha)
+        """
+
+        res = self.eval(expr)
+        res.should.contain('instruction assign alpha add int 1 int 4')
+        res.should.contain('instruction print var alpha')
 
     def test_assigns_variable_to_variable(self):
         expr = """
@@ -220,4 +238,4 @@ class TestLarkParser:
         """
 
         res = self.eval(expr)
-        res.should.contain('instruction assign alpha beta')
+        res.should.contain('instruction assign alpha var beta')

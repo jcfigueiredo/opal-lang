@@ -1,4 +1,3 @@
-import io
 import re
 
 from wurlitzer import pipes
@@ -91,7 +90,8 @@ class TestAssigning:
         ev = OpalEvaluator()
         ev.evaluate('gamma = "bon appetit"', run=False)
         str(ev.llvm_mod).should.contain('%gamma = alloca [12 x i8]*')
-        str(ev.llvm_mod).should.contain('store [12 x i8]* @str_2f274d89cb7f072099747f894e80986616b2e81cc8e02711ef7c78db956d1fca, [12 x i8]** %gamma')
+        str(ev.llvm_mod).should.contain(
+            'store [12 x i8]* @str_2f274d89cb7f072099747f894e80986616b2e81cc8e02711ef7c78db956d1fca, [12 x i8]** %gamma')
 
 
 class TestPrinting:
@@ -218,6 +218,23 @@ class TestPrinting:
 
         out.should.contain('true')
         out.should.contain('false')
+
+
+# class TestPrintingVariable:
+#     def test_works_for_integers(self):
+#         expr = """
+#         alpha = 123
+#         print(alpha)
+#         """
+#
+#         ev = OpalEvaluator()
+#
+#         with pipes() as (out, _):
+#             ev.evaluate(expr)
+#
+#         out = out.read()
+#
+#         out.should.contain('123')
 
 
 class TestComparison:
@@ -358,5 +375,3 @@ class TestRegression:
         ev = OpalEvaluator()
 
         ev.evaluate(expr)
-
-
