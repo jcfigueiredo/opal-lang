@@ -203,16 +203,16 @@ class CodeGenerator:
 
     # noinspection PyMethodMayBeStatic
     def visit_var(self, node):
-        return node.val
+        return Var(node.val)
 
     def visit_assign(self, node):
         left = self.visit(node.lhs)
         right = self.visit(node.rhs)
 
         if isinstance(node.rhs, String):
-            return self.alloc_and_store(right, right.type, name=left)
+            return self.alloc_and_store(right, right.type, name=left.val)
 
-        return self.alloc_and_store(right, node.rhs.as_llvm(), name=left)
+        return self.alloc_and_store(right, node.rhs.as_llvm(), name=left.val)
 
     def visit_binop(self, node):
 
