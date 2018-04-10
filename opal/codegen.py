@@ -290,12 +290,11 @@ class ASTVisitor(InlineTransformer):
         return a
 
     def assign(self, lhs, rhs):
-        lhs = Var(lhs.value)
         if isinstance(rhs, Token):
             rhs = Var(rhs.value)
         return Assign(lhs, rhs)
 
-    def var(self, id_):
+    def name(self, id_):
         return Var(id_.value)
 
     def print(self, expr):

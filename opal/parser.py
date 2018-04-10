@@ -14,4 +14,8 @@ def _get_grammar():
     return grammar
 
 
-parser = Lark(_get_grammar(), start='program', ambiguity='resolve')
+def get_parser():
+    return Lark(_get_grammar(), start='program', ambiguity='resolve', lexer='auto', parser='earley')
+
+
+parser = get_parser()

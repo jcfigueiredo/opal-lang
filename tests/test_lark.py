@@ -1,59 +1,44 @@
 import re
 
+from opal.parser import get_parser
+
+
 # from lark.tree import pydot__tree_to_png  # Just a neat utility function
 # pydot__tree_to_png(self.get_parser().parse(expr), "opal-grammar.png")
 
-from opal.parser import parser
 
-
-class TestLarkParser:
-    @staticmethod
-    def get_parser():
-        return parser
-
-    @staticmethod
+def eval(expr):
     def parsed_representation(prog):
         res = prog.pretty()
         res = re.sub(r"\s+", ' ', res)
         return res[:-1]
 
-    def eval(self, expr):
-        prog = self.get_parser().parse(expr)
-        res = self.parsed_representation(prog)
-        return res
+    prog = get_parser().parse(expr)
+    res = parsed_representation(prog)
+    return res
+
+
+class TestLarkParser:
 
     def test_handles_integers(self):
         expr = "1"
 
-        res = self.eval(expr)
+        res = eval(expr)
 
         res.should.equal('program block instruction int 1')
 
     def test_handles_floats(self):
         expr = "1.2"
 
-        res = self.eval(expr)
+        res = eval(expr)
 
         res.should.equal('program block instruction float 1.2')
 
     def test_handles_strings(self):
         expr = "'andrea'"
 
-        res = self.eval(expr)
+        res = eval(expr)
         res.should.equal('program block instruction string \'andrea\'')
-
-    def test_handles_booleans_true(self):
-        expr = "true"
-
-        res = self.eval(expr)
-
-        res.should.equal('program block instruction boolean true')
-
-    def test_handles_booleans_false(self):
-        expr = "false"
-
-        res = self.eval(expr)
-        res.should.equal('program block instruction boolean false')
 
     def test_multi_line(self):
         expr = """1 - 1
@@ -61,7 +46,7 @@ class TestLarkParser:
         """
 
         # noinspection PyUnusedLocal
-        res = self.get_parser().parse(expr)
+        res = eval(expr)
 
     def test_single_statement(self):
         expr = """
@@ -69,60 +54,53 @@ class TestLarkParser:
         """
 
         # noinspection PyUnusedLocal
-        res = self.get_parser().parse(expr)
-
-        # print(res.pretty())
-        # print(GenerateAST().transform(res))
-        # print(GenerateAST().transform(res).dump())
+        res = eval(expr)
 
     def test_single_line(self):
         expr = """1 - 1"""
 
         # noinspection PyUnusedLocal
-        res = self.get_parser().parse(expr)
-
-        # print(res.pretty())
-        # print(GenerateAST().transform(res).dump())
+        res = eval(expr)
 
     def test_adds_int(self):
         expr = "9 + 4"
 
-        res = self.eval(expr)
+        res = eval(expr)
 
         res.should.equal('program block instruction add int 9 int 4')
 
     def test_adds_float(self):
         expr = "22.3 + 5.67"
 
-        res = self.eval(expr)
+        res = eval(expr)
 
         res.should.equal('program block instruction add float 22.3 float 5.67')
 
     def test_print_string(self):
         expr = "print('hi ho')"
 
-        res = self.eval(expr)
+        res = eval(expr)
 
         res.should.equal('program block instruction print string \'hi ho\'')
 
     def test_print_integer(self):
         expr = "print(1)"
 
-        res = self.eval(expr)
+        res = eval(expr)
 
         res.should.equal('program block instruction print int 1')
 
     def test_print_float(self):
         expr = "print(1.2)"
 
-        res = self.eval(expr)
+        res = eval(expr)
 
         res.should.equal('program block instruction print float 1.2')
 
     def test_print_expressions(self):
         expr = "print(1 + 2 * 3)"
 
-        res = self.eval(expr)
+        res = eval(expr)
 
         res.should.equal('program block instruction print add int 1 mul int 2 int 3')
 
@@ -131,7 +109,7 @@ class TestLarkParser:
         240 / 24
         """
 
-        res = self.eval(expr)
+        res = eval(expr)
 
         res.should.equal('program block instruction div int 240 int 24')
 
@@ -141,7 +119,7 @@ class TestLarkParser:
         240 + 24
         """
 
-        res = self.eval(expr)
+        res = eval(expr)
 
         res.should.contain('instruction div int 240 int 24')
         res.should.contain('instruction add int 240 int 24')
@@ -154,7 +132,7 @@ class TestLarkParser:
         10.11 < 12.43
         """
 
-        res = self.eval(expr)
+        res = eval(expr)
         res.should.contain('instruction comp int 24123 > int 24')
         res.should.contain('instruction comp int 10 < int 12')
 
@@ -169,7 +147,7 @@ class TestLarkParser:
         10.11 <= 12.43
         """
 
-        res = self.eval(expr)
+        res = eval(expr)
         res.should.contain('instruction comp int 24123 >= int 24')
         res.should.contain('instruction comp int 10 <= int 12')
 
@@ -182,7 +160,7 @@ class TestLarkParser:
         23.4 == 5.67
         """
 
-        res = self.eval(expr)
+        res = eval(expr)
         res.should.contain('instruction comp int 12 == int 24')
         res.should.contain('instruction comp float 23.4 == float 5.67')
 
@@ -192,7 +170,7 @@ class TestLarkParser:
         23.4 != 5.67
         """
 
-        res = self.eval(expr)
+        res = eval(expr)
         res.should.contain('instruction comp int 12 != int 24')
         res.should.contain('instruction comp float 23.4 != float 5.67')
 
@@ -204,11 +182,11 @@ class TestLarkParser:
         delta = true
         """
 
-        res = self.eval(expr)
-        res.should.contain('instruction assign alpha int 123')
-        res.should.contain('instruction assign beta float 23.45')
-        res.should.contain('instruction assign gamma string "a j g"')
-        res.should.contain('instruction assign delta true')
+        res = eval(expr)
+        res.should.contain('instruction assign name alpha int 123')
+        res.should.contain('instruction assign name beta float 23.45')
+        res.should.contain('instruction assign name gamma string "a j g"')
+        res.should.contain('instruction assign name delta boolean true')
 
     def test_assigns_variable_to_expression(self):
         expr = """
@@ -217,10 +195,10 @@ class TestLarkParser:
         delta =  2 * (3 / (4 - 1))
         """
 
-        res = self.eval(expr)
-        res.should.contain('instruction assign alpha add int 1 int 4')
-        res.should.contain('instruction assign beta sub div mul int 2 int 3 int 4 int 1')
-        res.should.contain('instruction assign delta mul int 2 div int 3 sub int 4 int 1')
+        res = eval(expr)
+        res.should.contain('instruction assign name alpha add int 1 int 4')
+        res.should.contain('instruction assign name beta sub div mul int 2 int 3 int 4 int 1')
+        res.should.contain('instruction assign name delta mul int 2 div int 3 sub int 4 int 1')
 
     def test_prints_variables(self):
         expr = """
@@ -228,14 +206,43 @@ class TestLarkParser:
         print(alpha)
         """
 
-        res = self.eval(expr)
-        res.should.contain('instruction assign alpha add int 1 int 4')
-        res.should.contain('instruction print var alpha')
+        res = eval(expr)
+        res.should.contain('instruction assign name alpha add int 1 int 4')
+        res.should.contain('instruction print name alpha')
+
+    def test_prints_boolean_variables(self):
+        expr = """
+        delta = true
+        print(delta)
+        """
+
+        res = eval(expr)
+        res.should.contain('instruction assign name delta boolean true')
+        res.should.contain('instruction print name delta')
 
     def test_assigns_variable_to_variable(self):
         expr = """
         alpha = beta
         """
 
-        res = self.eval(expr)
-        res.should.contain('instruction assign alpha var beta')
+        res = eval(expr)
+        res.should.contain('instruction assign name alpha name beta')
+
+
+class TestSpecialCases:
+    def test_handles_true_when_true_its_only_statement(self):
+        expr = "true"
+
+        res = eval(expr)
+
+        res.should.equal('program block instruction name true')
+
+    def test_handles_false_when_true_its_only_statement(self):
+        expr = "false"
+
+        res = eval(expr)
+
+        # from lark.tree import pydot__tree_to_png  # Just a neat utility function
+        # pydot__tree_to_png(self.get_parser().parse(expr), "opal-grammar.png")
+
+        res.should.equal('program block instruction name false')

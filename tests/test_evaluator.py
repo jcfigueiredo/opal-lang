@@ -265,21 +265,27 @@ class TestPrintingVariable:
         out = out.read()
 
         out.should.contain('so be it')
-    #
-    # def test_works_for_booleans(self):
-    #     expr = """
-    #     delta = true
-    #     print(delta)
-    #     """
-    #
-    #     ev = OpalEvaluator()
-    #
-    #     with pipes() as (out, _):
-    #         ev.evaluate(expr)
-    #
-    #     out = out.read()
-    #
-    #     out.should.contain('true')
+
+    def test_works_for_booleans(self):
+        expr = """
+        delta = true
+        print(delta)
+        """
+
+        ev = OpalEvaluator()
+
+        # from opal.parser import parser
+        #
+        # from lark.tree import pydot__tree_to_png  # Just a neat utility function
+        # pydot__tree_to_png(parser.parse(expr), "opal-grammar.png")
+        # ev.evaluate(expr)
+
+        with pipes() as (out, _):
+            ev.evaluate(expr)
+
+        out = out.read()
+
+        out.should.contain('true')
 
 
 class TestComparison:

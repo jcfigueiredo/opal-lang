@@ -1,33 +1,28 @@
 program: block
 
-block: instruction  (term instruction)* (instruction term)*
+block: instruction
+     | (instruction _term)*
 
-instruction: sum
+instruction: selector
+    | number
 
+?selector: BOOLEAN -> boolean
+    | name
 
-?sum: product
-    | sum _add_op product   -> add_sub
-?product: atom
-    | product _mul_op atom  -> mul_div
-?atom: NUMBER
-    | "(" sum ")"
-
-!_add_op: "+"|"-"
-!_mul_op: "*"|"@"|"/"|"%"|"//"
-
-?const: float | int | string
-
-float: FLOAT
-int: INT
-string: STRING
+name: /[a-zA-Z_]\w*/
+number: INT
 
 INT: ["+"|"-"] DIGIT+
-FLOAT: ["+"|"-"] INT "." INT
-STRING : /("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/i
 
-term: NEWLINE
+BOOLEAN.2: /(true)|(false)/
+STRING  : /("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/i
+
+_term   : _NEWLINE
 
 %import common.DIGIT
-%import common.NEWLINE
+%import common.LETTER
+%import common.CNAME
+%import common.NEWLINE -> _NEWLINE
 %import common.WS
 %ignore WS
+

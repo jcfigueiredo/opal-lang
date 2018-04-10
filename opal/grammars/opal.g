@@ -1,16 +1,18 @@
 program: block
 
 block: instruction
-     | (instruction term)*
+     | (instruction _term)*
 
 instruction: sum
     | statements
 
+
 ?statements: assign
     | print_stmt -> print
 
+assign: name "=" sum
+
 ?print_stmt: "print" "(" sum ")"
-    | "print" "(" boolean ")"
 
 ?sum: product
     | sum "+" product   -> add
@@ -20,16 +22,13 @@ instruction: sum
     | product "/" atom  -> div
 ?atom: atom _comp_op atom -> comp
     | const
-    | ID -> var
-    | boolean
     | "(" sum ")"
-
-assign: ID "=" sum
-    | ID "=" ID
 
 !_comp_op: ">"|"<"|">="|"<="|"=="|"!="
 
-?const: number | string
+?const: selector | number | string | boolean
+
+?selector: name
 
 ?number: float | int
 
@@ -38,7 +37,7 @@ int: INT
 string: STRING
 boolean: BOOLEAN
 
-ID : /[a-zA-Z][a-zA-Z0-9_]\w*/
+name : /[a-zA-Z]\w*/
 // bug on lark forces this to be a regex
 BOOLEAN.2: /true|false/
 
@@ -46,9 +45,9 @@ INT: ["+"|"-"] DIGIT+
 FLOAT   : ["+"|"-"] INT "." INT
 STRING  : /("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/i
 
-?term   : NEWLINE
+_term   : _NEWLINE
 
 %import common.DIGIT
-%import common.NEWLINE
+%import common.NEWLINE -> _NEWLINE
 %import common.WS
 %ignore WS
