@@ -270,15 +270,11 @@ class TestPrintingVariable:
         expr = """
         delta = true
         print(delta)
+        zeta = false
+        print(zeta)
         """
 
         ev = OpalEvaluator()
-
-        # from opal.parser import parser
-        #
-        # from lark.tree import pydot__tree_to_png  # Just a neat utility function
-        # pydot__tree_to_png(parser.parse(expr), "opal-grammar.png")
-        # ev.evaluate(expr)
 
         with pipes() as (out, _):
             ev.evaluate(expr)
@@ -286,6 +282,7 @@ class TestPrintingVariable:
         out = out.read()
 
         out.should.contain('true')
+        out.should.contain('false')
 
 
 class TestComparison:

@@ -3,26 +3,26 @@ program: block
 block: instruction
      | (instruction _term)*
 
-instruction: sum
+instruction: test
     | statements
 
 
 ?statements: assign
     | print_stmt -> print
 
-assign: name "=" sum
+assign: name "=" test
 
-?print_stmt: "print" "(" sum ")"
+?print_stmt: "print" "(" test ")"
 
-?sum: product
-    | sum "+" product   -> add
-    | sum "-" product   -> sub
+?test: product
+    | test "+" product   -> add
+    | test "-" product   -> sub
 ?product: atom
     | product "*" atom  -> mul
     | product "/" atom  -> div
 ?atom: atom _comp_op atom -> comp
     | const
-    | "(" sum ")"
+    | "(" test ")"
 
 !_comp_op: ">"|"<"|">="|"<="|"=="|"!="
 
