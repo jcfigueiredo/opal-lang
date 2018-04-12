@@ -283,15 +283,9 @@ class ASTVisitor(InlineTransformer):
         statements_excluding_token = [arg for arg in args if arg and not isinstance(arg, Token)]
         return Block(statements_excluding_token)
 
-    # noinspection PyUnusedLocal
-    def instruction(self, a, b=None):
-        if isinstance(a, Token):
-            return None
-        return a
-
     def assign(self, lhs, rhs):
-        if isinstance(rhs, Token):
-            rhs = Var(rhs.value)
+        # if isinstance(rhs, Token):
+        #     rhs = Var(rhs.value)
         return Assign(lhs, rhs)
 
     def name(self, id_):

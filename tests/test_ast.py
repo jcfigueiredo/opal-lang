@@ -7,7 +7,7 @@ from opal.parser import parser
 
 
 def parse(expr):
-    return ASTVisitor().transform(parser.parse(f"{expr}\n"))
+    return ASTVisitor().transform(parser.parse(expr))
 
 
 class TestParsingExpressions:
@@ -40,6 +40,12 @@ class TestDumpingExpressions:
     def test_works_for_string_consts(self):
         prog = parse("'andrea'")
         prog.dump().should.contain('(Block\n  (String andrea))')
+
+    def test_works_for_bool_consts(self):
+        prog = parse("true")
+        prog.dump().should.contain('(Block\n  (Boolean true))')
+        prog = parse("false")
+        prog.dump().should.contain('(Block\n  (Boolean false))')
 
     def test_works_for_binops(self):
         prog = parse("1 + 2")
@@ -113,27 +119,31 @@ class TestDumpingExpressions:
         prog = parse("'one' < 'two'")
         prog.dump().should.contain('(Block\n  (< "one" "two"))')
 
-    # def test_works_for_if_conditionals(self):
-    #     expr = """
-    #     if true then
-    #         a = 10.5
-    #     end
-    #     """
-    #     prog = parse(expr)
-    #     prog.dump().should.contain('(Program\n  (Block\n  If((Boolean true)) Then((Block\n  (= a 10.5))))))')
+    def test_works_for_printing(self):
+        prog = parse('print("space pirate!")')
+        prog.dump().should.contain('(Block\n  (Print (String space pirate!)))')
 
-    # def test_works_for_if_then_else_conditionals(self):
-    #     expr = """
-    #     if false then
-    #         a = 'right'
-    #     else
-    #         b = 'wrong'
-    #     end
-    #     """
-    #     prog = parse(expr)
-    #     prog.dump().should.contain('(Program\n  (Block\n  '
-    #                                'If((Boolean false)) '
-    #                                'Then((Block\n  (= a "right"))\nThen((Block\n  (= a "right"))))))')
+    def test_works_for_if_conditionals(self):
+        expr = """
+        if true then
+            a = 10.5
+        end
+        """
+        prog = parse(expr)
+        prog.dump().should.contain('(Program\n  (Block\n  If((Boolean true)) Then((Block\n  (= a 10.5))))))')
+
+    def test_works_for_if_then_else_conditionals(self):
+        expr = """
+        if false then
+            a = 'right'
+        else
+            b = 'wrong'
+        end
+        """
+        prog = parse(expr)
+        prog.dump().should.be.equal('(Program\n  (Block\n  If((Boolean false)) '
+                                    'Then((Block\n  (= a "right")))) '
+                                    'Else((Block\n  (= b "wrong")))))')
 
 
 class TestComparingNodes:
