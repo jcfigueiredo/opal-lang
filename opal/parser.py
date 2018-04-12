@@ -14,8 +14,17 @@ def _get_grammar():
     return grammar
 
 
+class Parser:
+
+    def __init__(self):
+        self.lark = Lark(_get_grammar(), start="program", lexer="standard", debug=True)
+
+    def parse(self, string):
+        return self.lark.parse(f'{string}\n')
+
+
 def get_parser():
-    return Lark(_get_grammar(), start='program', ambiguity='resolve', lexer='auto', parser='earley')
+    return Parser()
 
 
 parser = get_parser()

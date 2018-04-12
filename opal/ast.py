@@ -88,6 +88,19 @@ class BinaryOp(ASTNode, metaclass=Plugin):
         return f'({self.op} {left} {right})'
 
 
+class If(ASTNode):
+
+    def __init__(self, cond, then_, else_=None):
+        self.cond = cond
+        self.then_ = then_
+        self.else_ = else_
+
+    def dump(self):
+        else_ = self.else_ and f' Else({self.else_.dump()})' or ''
+        s = f'If({self.cond.dump()}) Then({self.then_.dump()})){else_}'
+        return s
+
+
 class Assign(BinaryOp):
     op = '='
 

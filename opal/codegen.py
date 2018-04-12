@@ -8,7 +8,7 @@ from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
 from opal import operations as ops
 from opal.ast import Program, BinaryOp, Integer, Block, Add, Sub, Mul, Div, Float, String, Print, Boolean, GreaterThan, \
-    LessThan, Equals, Unequals, Comparison, Assign, Var
+    LessThan, Equals, Unequals, Comparison, Assign, Var, If
 
 from opal.types import Int8, Any
 
@@ -323,6 +323,9 @@ class ASTVisitor(InlineTransformer):
 
     def boolean(self, const):
         return Boolean(const.value == 'true')
+
+    def if_(self, cond, then_, else_=None):
+        return If(cond, then_, else_)
 
     def comp(self, lhs, op, rhs):
         node = Comparison.by(op.value)

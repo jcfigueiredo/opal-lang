@@ -1,18 +1,21 @@
 program: block
 
-block: instruction
-     | (instruction _term)*
+block:  (_stmt _NEWLINE)*
 
-instruction: test
-    | statements
+_stmt:
+    | _comp_statement
+    | test
 
+_comp_statement:
+    | assign
+    | print
+    | if_
 
-?statements: assign
-    | print_stmt -> print
+?assign: (name "=" test)
 
-assign: name "=" test
+print: "print" "(" test ")"
 
-?print_stmt: "print" "(" test ")"
+?if_: (_IF boolean _THEN) block [_ELSE  block] _END
 
 ?test: product
     | test "+" product   -> add
@@ -37,17 +40,29 @@ int: INT
 string: STRING
 boolean: BOOLEAN
 
-name : /[a-zA-Z]\w*/
+name: CNAME
+
 // bug on lark forces this to be a regex
 BOOLEAN.2: /true|false/
+
+_IF.10: /if/
+_THEN.10: /then/
+_ELSE.10: /else/
+_END.10: /end/
+
 
 INT: ["+"|"-"] DIGIT+
 FLOAT   : ["+"|"-"] INT "." INT
 STRING  : /("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/i
 
-_term   : _NEWLINE
 
+_NEWLINE: /\n\s*/
+
+%import common.WS_INLINE
 %import common.DIGIT
-%import common.NEWLINE -> _NEWLINE
-%import common.WS
-%ignore WS
+%import common.CNAME
+
+%ignore WS_INLINE
+
+
+

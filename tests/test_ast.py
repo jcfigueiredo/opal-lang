@@ -56,7 +56,7 @@ class TestDumpingExpressions:
         prog.dump().should.contain('(- (/ (* 10 2) 3) 1)')
 
     def test_works_for_multiline(self):
-        prog = parse("1 * 2\n4 + 3\n2 - 1 + 4 * 2\n")
+        prog = parse("1 * 2\n4 + 3\n2 - 1 + 4 * 2")
         prog.dump().should.contain('(* 1 2)\n(+ 4 3)\n(+ (- 2 1) (* 4 2))')
 
     def test_works_comparison(self):
@@ -112,6 +112,28 @@ class TestDumpingExpressions:
         # won't be implement this for a while, even if the syntax supports
         prog = parse("'one' < 'two'")
         prog.dump().should.contain('(Block\n  (< "one" "two"))')
+
+    # def test_works_for_if_conditionals(self):
+    #     expr = """
+    #     if true then
+    #         a = 10.5
+    #     end
+    #     """
+    #     prog = parse(expr)
+    #     prog.dump().should.contain('(Program\n  (Block\n  If((Boolean true)) Then((Block\n  (= a 10.5))))))')
+
+    # def test_works_for_if_then_else_conditionals(self):
+    #     expr = """
+    #     if false then
+    #         a = 'right'
+    #     else
+    #         b = 'wrong'
+    #     end
+    #     """
+    #     prog = parse(expr)
+    #     prog.dump().should.contain('(Program\n  (Block\n  '
+    #                                'If((Boolean false)) '
+    #                                'Then((Block\n  (= a "right"))\nThen((Block\n  (= a "right"))))))')
 
 
 class TestComparingNodes:
@@ -256,3 +278,4 @@ class TestBinaryOperationNodes:
 
         # noinspection PyUnresolvedReferences
         add.__eq__.when.called_with(v1).should.throw(LogicError, expected_message)
+
