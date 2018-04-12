@@ -78,7 +78,7 @@ class CodeGenerator:
 
     @staticmethod
     def generic_codegen(node):
-        raise Exception('No visit_{} method'.format(type(node).__name__.lower()))
+        raise NotImplementedError('No visit_{} method'.format(type(node).__name__.lower()))
 
     def branch(self, block):
         self.builder.branch(block)

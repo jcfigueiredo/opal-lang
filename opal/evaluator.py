@@ -50,8 +50,8 @@ class OpalEvaluator:
 
         self.llvm_mod.verify()
 
-        if print_ir:
-            print(self.llvm_mod)
+        if print_ir:  # pragma: no cover
+            print(self.llvm_mod)  # pragma: no cover
 
         target_machine = llvm.Target.from_default_triple().create_target_machine()
 

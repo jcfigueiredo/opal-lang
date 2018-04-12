@@ -45,9 +45,6 @@ class Block(ASTNode):
     def __eq__(self, o):
         return any(map(eq, self.statements, o.statements))
 
-    def add_statement(self, statement):
-        self._statements.insert(0, statement)
-
     @property
     def statements(self):
         return self._statements
