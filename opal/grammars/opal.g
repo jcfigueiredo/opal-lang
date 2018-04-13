@@ -2,8 +2,7 @@ program: block
 
 block:  (_stmt _NEWLINE)*
 
-_stmt:
-    | _comp_statement
+_stmt: _comp_statement
     | test
 
 _comp_statement:
@@ -15,7 +14,7 @@ _comp_statement:
 
 print: "print" "(" test ")"
 
-?if_: (_IF boolean _THEN) block [_ELSE  block] _END
+?if_: (_IF test _THEN) block [_ELSE  block] _END
 
 ?test: product
     | test "+" product   -> add

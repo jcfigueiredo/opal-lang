@@ -1,8 +1,7 @@
 from wurlitzer import pipes
 
 
-class TestIfStatements:
-
+class TestSimpleIfStatements:
     def test_handles_then_branch(self, evaluator):
         message = """Goes in."""
 
@@ -36,4 +35,3 @@ class TestIfStatements:
         out = out.read()
 
         out.should.contain(message)
-

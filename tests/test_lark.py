@@ -13,7 +13,7 @@ def get_representation(expr):
         repres = re.sub(r"\s+", ' ', repres)
         return repres[:-1]
 
-    prog = get_parser().parse(f'{expr}\n')
+    prog = get_parser().parse(f'{expr}')
     repres = parsed_representation(prog)
     return repres
 
@@ -276,18 +276,25 @@ class TestConditionals:
         false
         """
 
-        # parser = get_parser()
-        #
-        # prog = parser.parse(f'{expr}\n')
-        #
-        # print(prog.pretty())
-        #
         repres = get_representation(expr)
         repres.should.contain('if_ boolean true block')
         repres.should.contain('assign name a int 1 ')
         repres.should.contain('assign name b float 2.2')
         repres.should.contain('block string "amora"')
         repres.should.contain('print name a')
+
+    def test_works_for_variable(self):
+        expr = """
+        green = true
+        if green then
+            band = "day"
+        end
+        """
+
+        repres = get_representation(expr)
+        repres.should.contain('assign name green boolean true ')
+        repres.should.contain('if_ name green block')
+        repres.should.contain('assign name band string "day"')
 
 
 class TestSpecialCases:

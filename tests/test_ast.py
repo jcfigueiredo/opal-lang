@@ -145,6 +145,48 @@ class TestDumpingExpressions:
                                     'Then((Block\n  (= a "right")))) '
                                     'Else((Block\n  (= b "wrong")))))')
 
+    def test_works_for_if_with_variables(self):
+        expr = """
+        
+        if alpha then
+            beta = 'gamma'
+        end
+        """
+        prog = parse(expr)
+        prog.dump().should.be.equal('(Program\n  (Block\n  If((Var alpha)) Then((Block\n  (= beta "gamma"))))))')
+
+    def test_works_for_if_with_consts(self):
+        expr = """
+        
+        if 1 then
+            beta = 'gamma'
+        end
+        """
+        prog = parse(expr)
+        prog.dump().should.be.equal('(Program\n  (Block\n  If((Integer 1)) Then((Block\n  (= beta "gamma"))))))')
+
+    def test_works_for_if_with_expressions(self):
+        expr = """
+        
+        if 1 + 3 * 4 - 5 + 2 then
+            beta = 'gamma'
+        end
+        """
+        prog = parse(expr)
+        prog.dump().should.be.equal('(Program\n  (Block\n  If((+ (- (+ 1 (* 3 4)) 5) 2)) '
+                                    'Then((Block\n  (= beta "gamma"))))))')
+
+    def test_works_for_if_with_strings(self):
+        expr = """
+        
+        if "pocoio" then
+            beta = 'gamma'
+        end
+        """
+        prog = parse(expr)
+        prog.dump().should.be.equal('(Program\n  (Block\n  If((String pocoio)) '
+                                    'Then((Block\n  (= beta "gamma"))))))')
+
 
 class TestComparingNodes:
     def test_works_for_programs(self):
