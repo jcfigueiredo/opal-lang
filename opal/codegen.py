@@ -348,7 +348,7 @@ class ASTVisitor(InlineTransformer):
         return Float(const.value)
 
     def string(self, const):
-        return String(const.value[1:][:-1])
+        return String(const.value[1:-1])
 
     def boolean(self, const):
         return Boolean(const.value == 'true')
