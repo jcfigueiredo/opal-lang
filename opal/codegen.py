@@ -61,27 +61,30 @@ class CodeGenerator:
                                     var_arg=True)
         ir.Function(self.module, printf_ty, 'printf')
 
-    def generate_code(self, node):
-        assert isinstance(node, Program)
-        return self.visit(node)
-
     def alloc_and_store(self, val, typ, name=''):
         var_addr = self.builder.alloca(typ, name=name)
         self.builder.store(val, var_addr)
         return var_addr
 
-    def load(self, name):
-        return self.builder.load(name)
+    def add_block(self, name):
+        return self.current_function.append_basic_block(name)
+
+    def branch(self, block):
+        self.builder.branch(block)
+
+    # noinspection SpellCheckingInspection
+    def cbranch(self, cond, true_block, false_block):
+        self.builder.cbranch(cond, true_block, false_block)
 
     def gep(self, ptr, indices, inbounds=False, name=''):
         return self.builder.gep(ptr, indices, inbounds, name)
 
-    @staticmethod
-    def generic_codegen(node):
-        raise NotImplementedError('No visit_{} method'.format(type(node).__name__.lower()))
+    def generate_code(self, node):
+        assert isinstance(node, Program)
+        return self.visit(node)
 
-    def branch(self, block):
-        self.builder.branch(block)
+    def load(self, name):
+        return self.builder.load(name)
 
     def position_at_end(self, block):
         self.builder.position_at_end(block)
@@ -100,25 +103,6 @@ class CodeGenerator:
             gv.initializer = text
 
         return gv
-
-    def visit(self, node):
-        """
-        Dynamically invoke the code generator for each specific node
-        :param node: ASTNode
-        """
-
-        if isinstance(node, Integer) or isinstance(node, Float) or isinstance(node, Boolean):
-            return self.visit_value(node)
-
-        method = 'visit_' + type(node).__name__.lower()
-
-        if isinstance(node, BinaryOp):
-            visit_specific_binop = getattr(self, method, None)
-            if visit_specific_binop:
-                return visit_specific_binop(node)
-            return self.visit_binop(node)
-
-        return getattr(self, method, self.generic_codegen)(node)
 
     @staticmethod
     def get_string_name(string):
@@ -147,10 +131,33 @@ class CodeGenerator:
 
         raise NotImplementedError
 
-    def visit_string(self, node):
+    @staticmethod
+    def generic_codegen(node):
+        raise NotImplementedError('No visit_{} method'.format(type(node).__name__.lower()))
+
+    def visit(self, node):
+        """
+        Dynamically invoke the code generator for each specific node
+        :param node: ASTNode
+        """
+
+        if isinstance(node, Integer) or isinstance(node, Float) or isinstance(node, Boolean):
+            return self.visit_value(node)
+
+        method = 'visit_' + type(node).__name__.lower()
+
+        if isinstance(node, BinaryOp):
+            visit_specific_binop = getattr(self, method, None)
+            if visit_specific_binop:
+                return visit_specific_binop(node)
+            return self.visit_binop(node)
+
+        return getattr(self, method, self.generic_codegen)(node)
+
+    def visit_string(self, node: String):
         return self.insert_const_string(node.val)
 
-    def visit_print(self, node):
+    def visit_print(self, node: Print):
         val = self.visit(node.val)
 
         typ = None
@@ -215,11 +222,29 @@ class CodeGenerator:
 
         raise NotImplementedError(f'can\'t print {node.val}')
 
+    # TODO: review this to codegen instead of returning an ASTNode
     # noinspection PyMethodMayBeStatic
-    def visit_var(self, node):
+    def visit_var(self, node: Var):
         return Var(node.val)
 
-    def visit_assign(self, node):
+    def visit_if(self, node: If):
+        start_block = self.add_block('if.start')
+        end_block = self.add_block('if.end')
+        self.branch(start_block)
+        self.position_at_end(start_block)
+
+        if_true_block = self.add_block('if.true')
+        cond = self.visit(node.cond)
+        self.cbranch(cond, if_true_block, end_block)
+
+        self.position_at_end(if_true_block)
+
+        self.visit(node.then_)
+
+        self.branch(end_block)
+        self.position_at_end(end_block)
+
+    def visit_assign(self, node: Assign):
         left = self.visit(node.lhs)
         right = self.visit(node.rhs)
 

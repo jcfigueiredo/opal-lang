@@ -17,7 +17,8 @@ def int_ops(builder, left, right, node):
     elif isinstance(node, Comparison):
         return builder.icmp_signed(op, left, right, 'booltmp')
 
-    raise SyntaxError('Unknown operator', op)
+    # it should never get to this point since grammar doesn't allow for it
+    raise SyntaxError('Unknown operator', op)  # pragma: no cover
 
 
 def float_ops(builder, left, right, node):
@@ -35,4 +36,5 @@ def float_ops(builder, left, right, node):
     elif isinstance(node, Comparison):
         return builder.fcmp_ordered(op, left, right, 'booltmp')
 
-    raise SyntaxError('Unknown operator', op)
+    # it should never get to this point since grammar doesn't allow for it
+    raise SyntaxError('Unknown operator', op)  # pragma: no cover
