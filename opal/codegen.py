@@ -235,13 +235,23 @@ class CodeGenerator:
 
         if_true_block = self.add_block('if.true')
         cond = self.visit(node.cond)
-        self.cbranch(cond, if_true_block, end_block)
+
+        if_false_block = end_block
+
+        if node.else_:
+            if_false_block = self.add_block('if.false')
+
+        self.cbranch(cond, if_true_block, if_false_block)
 
         self.position_at_end(if_true_block)
-
         self.visit(node.then_)
-
         self.branch(end_block)
+
+        if node.else_:
+            self.position_at_end(if_false_block)
+            self.visit(node.else_)
+            self.branch(end_block)
+
         self.position_at_end(end_block)
 
     def visit_assign(self, node: Assign):

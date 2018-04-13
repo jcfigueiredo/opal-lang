@@ -12,7 +12,23 @@ class TestIfStatements:
         end
         """
 
-        # evaluator.evaluate(expr)
+        with pipes() as (out, _):
+            evaluator.evaluate(expr)
+
+        out = out.read()
+
+        out.should.contain(message)
+
+    def test_handles_else_branch(self, evaluator):
+        message = """Goes out."""
+
+        expr = f"""
+        if false then
+            print("never gets here")
+        else
+            print("{message}")
+        end
+        """
 
         with pipes() as (out, _):
             evaluator.evaluate(expr)
