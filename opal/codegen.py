@@ -7,9 +7,8 @@ from llvmlite import ir as ir
 from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
 from opal import operations as ops
-from opal.ast import Program, BinaryOp, Integer, Block, Add, Sub, Mul, Div, Float, String, Print, Boolean, GreaterThan, \
-    LessThan, Equals, Unequals, Comparison, Assign, Var, If
-
+from opal.ast import Program, BinaryOp, Integer, Block, Add, Sub, Mul, Div, Float, String, Print, Boolean, Comparison, \
+    Assign, Var, If
 from opal.types import Int8, Any
 
 PRIVATE_LINKAGE = 'private'
@@ -157,6 +156,11 @@ class CodeGenerator:
     def visit_string(self, node: String):
         return self.insert_const_string(node.val)
 
+    # TODO: review this to codegen instead of returning an ASTNode
+    # noinspection PyMethodMayBeStatic
+    def visit_var(self, node):
+        return Var(node.val)
+
     def visit_print(self, node: Print):
         val = self.visit(node.val)
 
@@ -222,12 +226,7 @@ class CodeGenerator:
 
         raise NotImplementedError(f'can\'t print {node.val}')
 
-    # TODO: review this to codegen instead of returning an ASTNode
-    # noinspection PyMethodMayBeStatic
-    def visit_var(self, node: Var):
-        return Var(node.val)
-
-    def visit_if(self, node: If):
+    def visit_if(self, node):
         start_block = self.add_block('if.start')
         end_block = self.add_block('if.end')
         self.branch(start_block)
@@ -235,6 +234,10 @@ class CodeGenerator:
 
         if_true_block = self.add_block('if.true')
         cond = self.visit(node.cond)
+
+        if isinstance(cond, Var):
+            typ, name = self.symtab[cond.val]
+            cond = self.load(name)
 
         if_false_block = end_block
 
@@ -319,8 +322,6 @@ class ASTVisitor(InlineTransformer):
         return Block(statements_excluding_token)
 
     def assign(self, lhs, rhs):
-        # if isinstance(rhs, Token):
-        #     rhs = Var(rhs.value)
         return Assign(lhs, rhs)
 
     def name(self, id_):
