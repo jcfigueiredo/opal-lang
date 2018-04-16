@@ -2,6 +2,8 @@
 
 
 from operator import eq
+from typing import Iterable
+
 from opal import types
 from opal.plugin import Plugin
 
@@ -227,3 +229,12 @@ class Var(Value):
 class VarValue(Value):
     def __init__(self, val):
         self.val = val
+
+
+class Array(ASTNode):
+
+    def __init__(self, items: Iterable[Value]):
+        self._items = items
+
+    def dump(self):
+        return "[{0}]".format(', '.join([item.dump() for item in self._items]))

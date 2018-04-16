@@ -10,7 +10,7 @@ from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
 from opal import operations as ops
 from opal.ast import Program, BinaryOp, Integer, Block, Add, Sub, Mul, Div, Float, String, Print, Boolean, Comparison, \
-    Assign, Var, If, VarValue
+    Assign, Var, If, VarValue, Array
 from opal.types import Int8, Any
 
 PRIVATE_LINKAGE = 'private'
@@ -374,6 +374,9 @@ class ASTVisitor(InlineTransformer):
 
     def string(self, const):
         return String(const.value[1:-1])
+
+    def array(self, *items):
+        return Array(items)
 
     def boolean(self, const):
         return Boolean(const.value == 'true')
