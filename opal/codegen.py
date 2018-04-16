@@ -240,10 +240,14 @@ class CodeGenerator:
 
         if_true_block = self.add_block('if.true')
 
+        # import ipdb; ipdb.set_trace();
         if isinstance(node.cond, VarValue):
             _, cond = self.visit(node.cond)
         else:
             cond = self.visit(node.cond)
+
+        if cond.type != Boolean.as_llvm():
+            cond = self.cast(cond, Boolean)
 
         if_false_block = end_block
 
@@ -311,6 +315,18 @@ class CodeGenerator:
     # noinspection PyMethodMayBeStatic
     def visit_value(self, node):
         return self.const(node.val)
+
+    def cast(self, from_, to):
+        if from_.type == Integer.as_llvm() and to is Boolean:
+            result = self.alloc_and_store(from_, Integer.as_llvm())
+            result = self.load(result)
+            return self.builder.icmp_signed('!=', result, self.const(0))
+        if from_.type == Float.as_llvm() and to is Boolean:
+            result = self.alloc_and_store(from_, Float.as_llvm())
+            result = self.load(result)
+            return self.builder.fcmp_ordered('!=', result, self.const(0.0))
+
+        raise NotImplementedError('Unsupported cast')
 
 
 # noinspection PyMethodMayBeStatic

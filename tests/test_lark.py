@@ -174,6 +174,14 @@ class TestLarkParser:
         repres.should.contain('comp int 12 != int 24')
         repres.should.contain('comp float 23.4 != float 5.67')
 
+    def test_compares_expressions(self):
+        expr = """        
+            2 + 3 == 5
+        """
+
+        repres = get_representation(expr)
+        repres.should.contain('comp add int 2 int 3 == int 5')
+
     def test_assigns_variable_to_constant(self):
         expr = """
         alpha = 123

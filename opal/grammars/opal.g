@@ -16,14 +16,14 @@ print: "print" "(" test ")"
 
 ?if_: (_IF test _THEN) block [_ELSE  block] _END
 
-?test: product
+?test: test _comp_op test -> comp
+    | product
     | test "+" product   -> add
     | test "-" product   -> sub
 ?product: atom
     | product "*" atom  -> mul
     | product "/" atom  -> div
-?atom: atom _comp_op atom -> comp
-    | const
+?atom: const
     | "(" test ")"
 
 !_comp_op: ">"|"<"|">="|"<="|"=="|"!="
