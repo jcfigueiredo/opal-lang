@@ -155,7 +155,7 @@ class CodeGenerator:
 
         return getattr(self, method, self.generic_codegen)(node)
 
-    def visit_string(self, node: String):
+    def visit_string(self, node):
         return self.insert_const_string(node.val)
 
     # TODO: review this to codegen instead of returning an ASTNode
@@ -240,7 +240,6 @@ class CodeGenerator:
 
         if_true_block = self.add_block('if.true')
 
-        # import ipdb; ipdb.set_trace();
         if isinstance(node.cond, VarValue):
             _, cond = self.visit(node.cond)
         else:

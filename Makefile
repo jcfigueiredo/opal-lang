@@ -14,5 +14,7 @@ setup:
 	@pip install -r requirements-tests.txt
 
 convert_c_to_ir:
-	@find ./CLib -name "*.c" | xargs ./resources/c-to-llvm.sh
-	@mv `find ./CLib -name "*.ll"` ./llvm_ir/
+	@for f in `find ./CLib -name "*.c"` ; do \
+    	./resources/c-to-llvm.sh $$f ; \
+	done
+	mv ./CLib/*.ll ./llvm_ir/
