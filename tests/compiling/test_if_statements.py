@@ -51,8 +51,6 @@ class TestSimpleIfStatements:
             print("it's there")
         end
         """
-        # evaluator.evaluate(expr)
-
         with pipes() as (out, _):
             evaluator.evaluate(expr)
 

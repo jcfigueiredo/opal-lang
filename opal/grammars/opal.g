@@ -30,7 +30,7 @@ print: "print" "(" test ")"
 
 ?const: selector | number | string | boolean
 
-?selector: name
+?selector: var
 
 ?number: float | int
 
@@ -40,6 +40,7 @@ string: STRING
 boolean: BOOLEAN
 
 name: CNAME
+var: CNAME
 
 // bug on lark forces this to be a regex
 BOOLEAN.2: /true|false/

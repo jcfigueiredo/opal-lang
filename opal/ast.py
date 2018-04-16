@@ -222,3 +222,8 @@ class String(Value, types.String):
 class Var(Value):
     def __init__(self, val):
         self.val = val
+
+
+class VarValue(Value):
+    def __init__(self, val):
+        self.val = val

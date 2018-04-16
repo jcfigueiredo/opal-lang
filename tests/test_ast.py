@@ -153,7 +153,7 @@ class TestDumpingExpressions:
         end
         """
         prog = parse(expr)
-        prog.dump().should.be.equal('(Program\n  (Block\n  If((Var alpha)) Then((Block\n  (= beta "gamma"))))))')
+        prog.dump().should.be.equal('(Program\n  (Block\n  If((VarValue alpha)) Then((Block\n  (= beta "gamma"))))))')
 
     def test_works_for_if_with_consts(self):
         expr = """

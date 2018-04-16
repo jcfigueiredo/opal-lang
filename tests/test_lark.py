@@ -208,7 +208,7 @@ class TestLarkParser:
 
         repres = get_representation(expr)
         repres.should.contain('assign name alpha add int 1 int 4')
-        repres.should.contain('print name alpha')
+        repres.should.contain('print var alpha')
 
     def test_prints_boolean_variables(self):
         expr = """
@@ -218,7 +218,7 @@ class TestLarkParser:
 
         repres = get_representation(expr)
         repres.should.contain('assign name delta boolean true')
-        repres.should.contain('print name delta')
+        repres.should.contain('print var delta')
 
     def test_assigns_variable_to_variable(self):
         expr = """
@@ -226,7 +226,7 @@ class TestLarkParser:
         """
 
         repres = get_representation(expr)
-        repres.should.contain('assign name alpha name beta')
+        repres.should.contain('assign name alpha var beta')
 
 
 class TestConditionals:
@@ -241,7 +241,7 @@ class TestConditionals:
         repres = get_representation(expr)
         repres.should.contain('if_ boolean true block ')
         repres.should.contain('assign name a int 1 ')
-        repres.should.contain('print name a')
+        repres.should.contain('print var a')
 
     def test_works_for_booleans_with_else(self):
         expr = """
@@ -281,7 +281,7 @@ class TestConditionals:
         repres.should.contain('assign name a int 1 ')
         repres.should.contain('assign name b float 2.2')
         repres.should.contain('block string "amora"')
-        repres.should.contain('print name a')
+        repres.should.contain('print var a')
 
     def test_works_for_variable(self):
         expr = """
@@ -293,7 +293,7 @@ class TestConditionals:
 
         repres = get_representation(expr)
         repres.should.contain('assign name green boolean true ')
-        repres.should.contain('if_ name green block')
+        repres.should.contain('if_ var green block')
         repres.should.contain('assign name band string "day"')
 
 

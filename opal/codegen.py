@@ -1,6 +1,8 @@
 from hashlib import sha3_256
 
+# noinspection PyPackageRequirements
 from lark import InlineTransformer
+# noinspection PyPackageRequirements
 from lark.lexer import Token
 from llvmlite import binding as llvm
 from llvmlite import ir as ir
@@ -8,7 +10,7 @@ from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
 from opal import operations as ops
 from opal.ast import Program, BinaryOp, Integer, Block, Add, Sub, Mul, Div, Float, String, Print, Boolean, Comparison, \
-    Assign, Var, If
+    Assign, Var, If, VarValue
 from opal.types import Int8, Any
 
 PRIVATE_LINKAGE = 'private'
@@ -161,15 +163,19 @@ class CodeGenerator:
     def visit_var(self, node):
         return Var(node.val)
 
+    def visit_varvalue(self, node):
+        typ, name = self.symtab[node.val]
+        val = self.load(name)
+        return typ, val
+
     def visit_print(self, node: Print):
-        val = self.visit(node.val)
+        if isinstance(node.val, VarValue):
+            typ, val = self.visit(node.val)
+        else:
+            val = self.visit(node.val)
+            typ = None
 
-        typ = None
-
-        if isinstance(val, Var):
-            typ, name = self.symtab[val.val]
-            val = self.load(name)
-        elif isinstance(node.val, String):
+        if isinstance(node.val, String):
             typ = String
         elif isinstance(node.val, Integer) or val.type is Integer.as_llvm():
             typ = Integer
@@ -233,11 +239,11 @@ class CodeGenerator:
         self.position_at_end(start_block)
 
         if_true_block = self.add_block('if.true')
-        cond = self.visit(node.cond)
 
-        if isinstance(cond, Var):
-            typ, name = self.symtab[cond.val]
-            cond = self.load(name)
+        if isinstance(node.cond, VarValue):
+            _, cond = self.visit(node.cond)
+        else:
+            cond = self.visit(node.cond)
 
         if_false_block = end_block
 
@@ -326,6 +332,9 @@ class ASTVisitor(InlineTransformer):
 
     def name(self, id_):
         return Var(id_.value)
+
+    def var(self, id_):
+        return VarValue(id_.value)
 
     def print(self, expr):
         return Print(expr)
