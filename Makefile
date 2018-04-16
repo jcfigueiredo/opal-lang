@@ -16,5 +16,6 @@ setup:
 convert_c_to_ir:
 	@for f in `find ./CLib -name "*.c"` ; do \
     	./resources/c-to-llvm.sh $$f ; \
+    	echo "$$f converted"; \
 	done
-	mv ./CLib/*.ll ./llvm_ir/
+	@mv ./CLib/*.ll ./llvm_ir/

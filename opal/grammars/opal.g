@@ -24,6 +24,7 @@ print: "print" "(" test ")"
     | product "*" atom  -> mul
     | product "/" atom  -> div
 ?atom: const
+    | array
     | "(" test ")"
 
 !_comp_op: ">"|"<"|">="|"<="|"=="|"!="
@@ -33,6 +34,8 @@ print: "print" "(" test ")"
 ?selector: var
 
 ?number: float | int
+
+array: "[" [int ("," int)*] "]"
 
 float: FLOAT
 int: INT

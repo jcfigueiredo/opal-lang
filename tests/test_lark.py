@@ -124,7 +124,9 @@ class TestLarkParser:
         repres.should.contain('div int 240 int 24')
         repres.should.contain('add int 240 int 24')
 
-    def test_compares_greater_and_less(self):
+
+class TestComparison:
+    def test_works_for_greater_and_less(self):
         expr = """
         24123 > 24
         10 < 12
@@ -139,7 +141,7 @@ class TestLarkParser:
         repres.should.contain('comp float 12.3 > float 24.23')
         repres.should.contain('comp float 10.11 < float 12.43')
 
-    def test_compares_greater_than_and_less_than(self):
+    def test_works_for_greater_than_and_less_than(self):
         expr = """
         24123 >= 24
         10 <= 12
@@ -154,7 +156,7 @@ class TestLarkParser:
         repres.should.contain('comp float 12.3 >= float 24.23')
         repres.should.contain('comp float 10.11 <= float 12.43')
 
-    def test_compares_equal(self):
+    def test_works_for_equal(self):
         expr = """
         12 == 24
         23.4 == 5.67
@@ -164,7 +166,7 @@ class TestLarkParser:
         repres.should.contain('comp int 12 == int 24')
         repres.should.contain('comp float 23.4 == float 5.67')
 
-    def test_compares_unequal(self):
+    def test_works_for_unequal(self):
         expr = """
         12 != 24
         23.4 != 5.67
@@ -174,7 +176,7 @@ class TestLarkParser:
         repres.should.contain('comp int 12 != int 24')
         repres.should.contain('comp float 23.4 != float 5.67')
 
-    def test_compares_expressions(self):
+    def test_works_for_expressions(self):
         expr = """        
             2 + 3 == 5
         """
@@ -182,6 +184,8 @@ class TestLarkParser:
         repres = get_representation(expr)
         repres.should.contain('comp add int 2 int 3 == int 5')
 
+
+class TestAssignment:
     def test_assigns_variable_to_constant(self):
         expr = """
         alpha = 123
@@ -235,6 +239,14 @@ class TestLarkParser:
 
         repres = get_representation(expr)
         repres.should.contain('assign name alpha var beta')
+
+    def test_assigns_arrays(self):
+        expr = """
+        arr = [1, 2, 3]
+        """
+
+        repres = get_representation(expr)
+        repres.should.contain('assign name arr array int 1 int 2 int 3')
 
 
 class TestConditionals:
@@ -303,6 +315,29 @@ class TestConditionals:
         repres.should.contain('assign name green boolean true ')
         repres.should.contain('if_ var green block')
         repres.should.contain('assign name band string "day"')
+
+
+class TestArray:
+    def test_with_multiple_items_is_supported(self):
+        expr = "[1, 2, 3]"
+
+        repres = get_representation(expr)
+
+        repres.should.equal('program block array int 1 int 2 int 3')
+
+    def test_with_one_item_is_supported(self):
+        expr = "[77]"
+
+        repres = get_representation(expr)
+
+        repres.should.equal('program block array int 77')
+
+    def test_empty_is_supported(self):
+        expr = "[]"
+
+        repres = get_representation(expr)
+
+        repres.should.equal('program block array')
 
 
 class TestSpecialCases:
