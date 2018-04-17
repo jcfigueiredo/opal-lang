@@ -10,7 +10,7 @@ from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
 from opal import operations as ops
 from opal.ast import Program, BinaryOp, Integer, Block, Add, Sub, Mul, Div, Float, String, Print, Boolean, Comparison, \
-    Assign, Var, If, VarValue, Array
+    Assign, Var, If, VarValue, List
 from opal.types import Int8, Any
 
 PRIVATE_LINKAGE = 'private'
@@ -62,10 +62,10 @@ class CodeGenerator:
                                     var_arg=True)
         ir.Function(self.module, printf_ty, 'printf')
 
-        vector_init_ty = ir.FunctionType(Any.as_llvm(), [Array.as_llvm().as_pointer()])
+        vector_init_ty = ir.FunctionType(Any.as_llvm(), [List.as_llvm().as_pointer()])
         ir.Function(self.module, vector_init_ty, 'vector_init')
 
-        vector_append_ty = ir.FunctionType(Any.as_llvm(), [Array.as_llvm().as_pointer(), Integer.as_llvm()])
+        vector_append_ty = ir.FunctionType(Any.as_llvm(), [List.as_llvm().as_pointer(), Integer.as_llvm()])
         ir.Function(self.module, vector_append_ty, 'vector_append')
 
     def alloc(self, typ, name=''):
@@ -290,8 +290,8 @@ class CodeGenerator:
 
         return var_address
 
-    def visit_array(self, node: Array):
-        vector = self.alloc(Array.as_llvm())
+    def visit_list(self, node: List):
+        vector = self.alloc(List.as_llvm())
         self.call('vector_init', [vector])
         for item in node.items:
             val = self.visit(item)
@@ -392,8 +392,8 @@ class ASTVisitor(InlineTransformer):
     def string(self, const):
         return String(const.value[1:-1])
 
-    def array(self, *items):
-        return Array(items)
+    def list(self, *items):
+        return List(items)
 
     def boolean(self, const):
         return Boolean(const.value == 'true')

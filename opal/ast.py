@@ -231,7 +231,7 @@ class VarValue(Value):
         self.val = val
 
 
-class Array(ASTNode, types.Vector):
+class List(ASTNode, types.Vector):
 
     def __init__(self, items: Iterable[Value]):
         self._items = items
