@@ -4,6 +4,9 @@
 from operator import eq
 from typing import Iterable
 
+from lark import InlineTransformer
+from lark.lexer import Token
+
 from opal import types
 from opal.plugin import Plugin
 
@@ -242,3 +245,82 @@ class List(ASTNode, types.Vector):
 
     def dump(self):
         return "[{0}]".format(', '.join([item.dump() for item in self._items]))
+
+
+class IndexOf(ASTNode):
+
+    def dump(self):
+        return f'(position {self.index.val} {self.lst.dump()})'
+
+    def __init__(self, lst: List, index: Integer):
+        self.lst = lst
+        self.index = index
+
+
+# noinspection PyMethodMayBeStatic
+class ASTVisitor(InlineTransformer):
+    def program(self, body):
+        if isinstance(body, Block):
+            program = Program(body)
+        else:
+            program = Program(Block([body]))
+
+        return program
+
+    def block(self, *args):
+        statements_excluding_token = [arg for arg in args if arg and not isinstance(arg, Token)]
+        return Block(statements_excluding_token)
+
+    def assign(self, lhs, rhs):
+        return Assign(lhs, rhs)
+
+    def name(self, id_):
+        return Var(id_.value)
+
+    def var(self, id_):
+        return VarValue(id_.value)
+
+    def print(self, expr):
+        return Print(expr)
+
+    def add(self, lhs, rhs):
+        return Add(lhs, rhs)
+
+    def sub(self, lhs, rhs):
+        return Sub(lhs, rhs)
+
+    def mul(self, lhs, rhs):
+        return Mul(lhs, rhs)
+
+    def div(self, lhs, rhs):
+        return Div(lhs, rhs)
+
+    def int(self, const):
+        return Integer(const.value)
+
+    def index(self, const):
+        return const
+
+    def float(self, const):
+        return Float(const.value)
+
+    def string(self, const):
+        return String(const.value[1:-1])
+
+    def list(self, *items):
+        return List(items)
+
+    def list_access(self, list_, index):
+        return IndexOf(lst=list_, index=index)
+
+    def boolean(self, const):
+        return Boolean(const.value == 'true')
+
+    def if_(self, cond, then_, else_=None):
+        return If(cond, then_, else_)
+
+    def comp(self, lhs, op, rhs):
+        node = Comparison.by(op.value)
+        if not node:
+            raise SyntaxError(f'The operation [{op}] is not supported.')
+        return node(lhs, rhs)

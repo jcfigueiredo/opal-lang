@@ -1,16 +1,12 @@
 from hashlib import sha3_256
 
 # noinspection PyPackageRequirements
-from lark import InlineTransformer
-# noinspection PyPackageRequirements
-from lark.lexer import Token
 from llvmlite import binding as llvm
 from llvmlite import ir as ir
 from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
 from opal import operations as ops
-from opal.ast import Program, BinaryOp, Integer, Block, Add, Sub, Mul, Div, Float, String, Print, Boolean, Comparison, \
-    Assign, Var, If, VarValue, List
+from opal.ast import Program, BinaryOp, Integer, Float, String, Print, Boolean, Assign, Var, VarValue, List, IndexOf
 from opal.types import Int8, Any
 
 PRIVATE_LINKAGE = 'private'
@@ -67,6 +63,9 @@ class CodeGenerator:
 
         vector_append_ty = ir.FunctionType(Any.as_llvm(), [List.as_llvm().as_pointer(), Integer.as_llvm()])
         ir.Function(self.module, vector_append_ty, 'vector_append')
+
+        vector_get_ty = ir.FunctionType(Integer.as_llvm(), [List.as_llvm().as_pointer(), Integer.as_llvm()])
+        ir.Function(self.module, vector_get_ty, 'vector_get')
 
     def alloc(self, typ, name=''):
         return self.builder.alloca(typ, name=name)
@@ -298,6 +297,11 @@ class CodeGenerator:
             self.call('vector_append', [vector, val])
         return vector
 
+    def visit_indexof(self, node: IndexOf):
+        index = self.visit(node.index)
+        vector = self.visit(node.lst)
+        return self.call('vector_get', [vector, index])
+
     def visit_binop(self, node):
 
         left = self.visit(node.lhs)
@@ -343,66 +347,3 @@ class CodeGenerator:
             return self.builder.fcmp_ordered('!=', result, self.const(0.0))
 
         raise NotImplementedError('Unsupported cast')
-
-
-# noinspection PyMethodMayBeStatic
-class ASTVisitor(InlineTransformer):
-    def program(self, body):
-        if isinstance(body, Block):
-            program = Program(body)
-        else:
-            program = Program(Block([body]))
-
-        return program
-
-    def block(self, *args):
-        statements_excluding_token = [arg for arg in args if arg and not isinstance(arg, Token)]
-        return Block(statements_excluding_token)
-
-    def assign(self, lhs, rhs):
-        return Assign(lhs, rhs)
-
-    def name(self, id_):
-        return Var(id_.value)
-
-    def var(self, id_):
-        return VarValue(id_.value)
-
-    def print(self, expr):
-        return Print(expr)
-
-    def add(self, lhs, rhs):
-        return Add(lhs, rhs)
-
-    def sub(self, lhs, rhs):
-        return Sub(lhs, rhs)
-
-    def mul(self, lhs, rhs):
-        return Mul(lhs, rhs)
-
-    def div(self, lhs, rhs):
-        return Div(lhs, rhs)
-
-    def int(self, const):
-        return Integer(const.value)
-
-    def float(self, const):
-        return Float(const.value)
-
-    def string(self, const):
-        return String(const.value[1:-1])
-
-    def list(self, *items):
-        return List(items)
-
-    def boolean(self, const):
-        return Boolean(const.value == 'true')
-
-    def if_(self, cond, then_, else_=None):
-        return If(cond, then_, else_)
-
-    def comp(self, lhs, op, rhs):
-        node = Comparison.by(op.value)
-        if not node:
-            raise SyntaxError(f'The operation [{op}] is not supported.')
-        return node(lhs, rhs)

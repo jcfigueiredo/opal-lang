@@ -1,8 +1,7 @@
 from llvmlite import ir
 
 from opal.ast import Program, Add, Integer, Block, Mul, LogicError, Float, String, Print, Comparison, Equals, Unequals, \
-    GreaterThan, LessThan, Sub, Div, Arithmetic, BinaryOp, GreaterThanEqual, LessThanEqual
-from opal.codegen import ASTVisitor
+    GreaterThan, LessThan, Sub, Div, Arithmetic, BinaryOp, GreaterThanEqual, LessThanEqual, ASTVisitor
 from opal.parser import parser
 
 
@@ -332,7 +331,7 @@ class TestBinaryOperationNodes:
         add.__eq__.when.called_with(v1).should.throw(LogicError, expected_message)
 
 
-class TestArrays:
+class TestLists:
     def test_have_a_representation(self):
         prog = parse("[10, 20, 25]")
         prog.dump().should.contain('(Block\n  [(Integer 10), (Integer 20), (Integer 25)])')
@@ -342,4 +341,9 @@ class TestArrays:
 
         prog = parse("[]")
         prog.dump().should.contain('(Block\n  [])')
+
+    def test_have_a_representation_for_accessing_index(self):
+        prog = parse("[10, 20, 25][2]")
+        prog.dump().should.contain('(Block\n  (position 2 [(Integer 10), (Integer 20), (Integer 25)]))')
+
 

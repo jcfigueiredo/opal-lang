@@ -7,7 +7,8 @@ from llvmlite import binding as llvm
 from os import path
 
 import opal
-from opal.codegen import CodeGenerator, ASTVisitor
+from opal.codegen import CodeGenerator
+from opal.ast import ASTVisitor
 from opal.parser import parser
 
 

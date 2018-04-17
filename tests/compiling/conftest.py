@@ -4,5 +4,5 @@ from opal.evaluator import OpalEvaluator
 
 
 @pytest.fixture
-def evaluator():
+def evaluator() -> OpalEvaluator:
     return OpalEvaluator()
