@@ -231,10 +231,14 @@ class VarValue(Value):
         self.val = val
 
 
-class Array(ASTNode):
+class Array(ASTNode, types.Vector):
 
     def __init__(self, items: Iterable[Value]):
         self._items = items
+
+    @property
+    def items(self):
+        return self._items
 
     def dump(self):
         return "[{0}]".format(', '.join([item.dump() for item in self._items]))

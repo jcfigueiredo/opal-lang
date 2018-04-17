@@ -31,6 +31,10 @@ class Float(Any):
 class String(Any):
     _llvm_type = ir.IntType(8).as_pointer
 
+
+class Vector(Any):
+    _llvm_type = ir.LiteralStructType([Int.as_llvm(), Int.as_llvm(), Int.as_llvm().as_pointer()])
+
 # type_map = {
 # 	ANY: ir.VoidType(),
 # 	BOOL: ir.IntType(1),

@@ -62,8 +62,17 @@ class CodeGenerator:
                                     var_arg=True)
         ir.Function(self.module, printf_ty, 'printf')
 
+        vector_init_ty = ir.FunctionType(Any.as_llvm(), [Array.as_llvm().as_pointer()])
+        ir.Function(self.module, vector_init_ty, 'vector_init')
+
+        vector_append_ty = ir.FunctionType(Any.as_llvm(), [Array.as_llvm().as_pointer(), Integer.as_llvm()])
+        ir.Function(self.module, vector_append_ty, 'vector_append')
+
+    def alloc(self, typ, name=''):
+        return self.builder.alloca(typ, name=name)
+
     def alloc_and_store(self, val, typ, name=''):
-        var_addr = self.builder.alloca(typ, name=name)
+        var_addr = self.alloc(typ, name)
         self.builder.store(val, var_addr)
         return var_addr
 
@@ -280,6 +289,14 @@ class CodeGenerator:
         self.symtab[name] = (node.rhs.__class__, var_address)
 
         return var_address
+
+    def visit_array(self, node: Array):
+        vector = self.alloc(Array.as_llvm())
+        self.call('vector_init', [vector])
+        for item in node.items:
+            val = self.visit(item)
+            self.call('vector_append', [vector, val])
+        return vector
 
     def visit_binop(self, node):
 
