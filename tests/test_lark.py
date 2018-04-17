@@ -340,6 +340,22 @@ class TestArray:
         repres.should.equal('program block array')
 
 
+class TestArrayAccess:
+    def test_works_for_explicit_arrays(self):
+        expr = "[10, 20, 30][2]"
+
+        repres = get_representation(expr)
+
+        repres.should.equal('program block array_access array int 10 int 20 int 30 index int 2')
+
+    def test_works_for_variables(self):
+        expr = "epta[22]"
+
+        repres = get_representation(expr)
+
+        repres.should.equal('program block array_access var epta index int 22')
+
+
 class TestSpecialCases:
     def test_handles_true_when_true_its_only_statement(self):
         expr = "true"
