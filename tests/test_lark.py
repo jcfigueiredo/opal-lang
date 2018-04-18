@@ -340,7 +340,7 @@ class Testlist:
         repres.should.equal('program block list')
 
 
-class TestlistAccess:
+class TestListAccess:
     def test_works_for_explicit_lists(self):
         expr = "[10, 20, 30][2]"
 

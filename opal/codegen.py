@@ -14,7 +14,9 @@ PRIVATE_LINKAGE = 'private'
 
 class CodeGenerator:
     def __init__(self):
+        # TODO: come up with a less naïve way of handling the symtab and types
         self.symtab = {}
+        self.typetab = {}
 
         self.module = Module(name='opal-lang')
         self.blocks = []
@@ -172,16 +174,16 @@ class CodeGenerator:
         return Var(node.val)
 
     def visit_varvalue(self, node):
-        typ, name = self.symtab[node.val]
-        val = self.load(name)
-        return typ, val
+        name = self.symtab[node.val]
+        return self.load(name)
 
     def visit_print(self, node: Print):
+
+        val = self.visit(node.val)
+        typ = None
+
         if isinstance(node.val, VarValue):
-            typ, val = self.visit(node.val)
-        else:
-            val = self.visit(node.val)
-            typ = None
+            typ = self.typetab[node.val.val]
 
         if isinstance(node.val, String):
             typ = String
@@ -249,7 +251,7 @@ class CodeGenerator:
         if_true_block = self.add_block('if.true')
 
         if isinstance(node.cond, VarValue):
-            _, cond = self.visit(node.cond)
+            cond = self.visit(node.cond)
         else:
             cond = self.visit(node.cond)
 
@@ -282,10 +284,13 @@ class CodeGenerator:
 
         if isinstance(node.rhs, String):
             var_address = self.alloc_and_store(right, right.type, name=name)
+        elif isinstance(node.rhs, List):
+            var_address = self.alloc_and_store(right, List.as_llvm().as_pointer())
         else:
             var_address = self.alloc_and_store(right, node.rhs.as_llvm(), name=name)
 
-        self.symtab[name] = (node.rhs.__class__, var_address)
+        self.symtab[name] = var_address
+        self.typetab[name] = node.rhs.__class__
 
         return var_address
 

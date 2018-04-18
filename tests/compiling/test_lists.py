@@ -21,9 +21,9 @@ class TestLists:
 
         evaluator.evaluate(expr, run=False)
 
-        str(evaluator.llvm_mod).should.contain(' call i32 @vector_get({ i32, i32, i32* }* %.2, i32 4)')
+        str(evaluator.llvm_mod).should.contain('call i32 @vector_get({ i32, i32, i32* }* %.2, i32 4)')
 
-    def test_can_be_printed(self, evaluator):
+    def test_items_can_be_printed(self, evaluator):
         expr = f"""
         print([11, 22, 33][1])        
         """
@@ -34,3 +34,16 @@ class TestLists:
         out = out.read()
 
         out.should.contain('22')
+
+    def test_can_be_assigned_to_variables(self, evaluator):
+        expr = f"""
+        my_list = [100, 200, 234, 400, 8]
+        print(my_list[2])        
+        """
+
+        with pipes() as (out, _):
+            evaluator.evaluate(expr)
+
+        out = out.read()
+
+        out.should.contain('234')
