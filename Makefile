@@ -7,7 +7,7 @@ help:
 	@echo "   make test"
 	@echo "   make convert_c_to_ir"
 
-test:
+test: convert_c_to_ir
 	@py.test --testdox --cov-branch --cov-report term-missing --cov-report=html --cov=opal --cov-config .coveragerc --color=yes
 
 setup:
