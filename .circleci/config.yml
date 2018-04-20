@@ -28,7 +28,7 @@ jobs:
           - v1-dependencies-
 
       - run:
-          name: install dependencies
+          name: install llvm
           command: |
             apt-get install -y llvm
 
