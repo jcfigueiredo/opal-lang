@@ -30,7 +30,7 @@ jobs:
       - run:
           name: install llvm
           command: |
-            apt-get install -y llvm
+            sudo apt-get install -y llvm
 
       - run:
           name: install dependencies
