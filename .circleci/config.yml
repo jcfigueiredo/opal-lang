@@ -28,9 +28,9 @@ jobs:
           - v1-dependencies-
 
       - run:
-          name: install llvm
+          name: install llvm & clang
           command: |
-            sudo apt-get install -y llvm
+            sudo apt-get install -y llvm clang
 
       - run:
           name: install dependencies
