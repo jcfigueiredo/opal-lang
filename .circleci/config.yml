@@ -1,14 +1,14 @@
 # Python CircleCI 2.0 configuration file
 #
 # Check https://circleci.com/docs/2.0/language-python/ for more details
-#
+# https://blog.kowalczyk.info/article/k/how-to-install-latest-clang-5.0-on-ubuntu-16.04-xenial-wsl.html
 version: 2
 jobs:
   build:
     docker:
       # specify the version you desire here
       # use `-browsers` prefix for selenium tests, e.g. `3.6.1-browsers`
-      - image: circleci/python:3.6.5
+      - image: jcfigueiredo/opal-lang:circleci
 
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
@@ -28,26 +28,11 @@ jobs:
           - v1-dependencies-
 
       - run:
-          name: install llvm & clang
-          command: |
-            sudo apt-get install -y software-properties-common
-            wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-            sudo apt-add-repository "deb http://apt.llvm.org/jessie/ llvm-toolchain-jessie-5.0 main"
-            sudo apt-get update
-            sudo apt-get install -y llvm-5.0 clang-5.0 llvm-5.0-tools
-
-      - run:
           name: install dependencies
           command: |
             python3 -m venv venv
             . venv/bin/activate
             pip install -r requirements-tests.txt
-
-      - run:
-          name: create llvm aliases
-          command: |
-            sudo ln -s $(which clang-5.0) /usr/local/bin/clang
-            sudo ln -s $(which lli-5.0) /usr/local/bin/lli
 
       - save_cache:
           paths:
