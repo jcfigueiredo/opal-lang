@@ -6,3 +6,4 @@ pytest-randomly
 pytest-mock
 pytest-testdox
 wurlitzer
+coverage-badge
