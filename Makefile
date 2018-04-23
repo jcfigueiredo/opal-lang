@@ -9,6 +9,7 @@ help:
 
 test: convert_c_to_ir
 	@py.test --testdox --cov-branch --cov-report term-missing --cov-report=html --cov=opal --cov-config .coveragerc --color=yes
+	@rm resources/coverage.svg
 	@coverage-badge -o resources/coverage.svg
 
 setup:
