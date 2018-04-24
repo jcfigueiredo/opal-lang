@@ -124,16 +124,16 @@ class TestDumpingExpressions:
 
     def test_works_for_if_conditionals(self):
         expr = """
-        if true then
+        if true do
             a = 10.5
         end
         """
         prog = parse(expr)
-        prog.dump().should.contain('(Program\n  (Block\n  If((Boolean true)) Then((Block\n  (= a 10.5))))))')
+        prog.dump().should.contain('(Program\n  (Block\n  If((Boolean true)) Do((Block\n  (= a 10.5))))))')
 
     def test_works_for_if_then_else_conditionals(self):
         expr = """
-        if false then
+        if false do
             a = 'right'
         else
             b = 'wrong'
@@ -141,50 +141,50 @@ class TestDumpingExpressions:
         """
         prog = parse(expr)
         prog.dump().should.be.equal('(Program\n  (Block\n  If((Boolean false)) '
-                                    'Then((Block\n  (= a "right")))) '
+                                    'Do((Block\n  (= a "right")))) '
                                     'Else((Block\n  (= b "wrong")))))')
 
     def test_works_for_if_with_variables(self):
         expr = """
         
-        if alpha then
+        if alpha do
             beta = 'gamma'
         end
         """
         prog = parse(expr)
-        prog.dump().should.be.equal('(Program\n  (Block\n  If((VarValue alpha)) Then((Block\n  (= beta "gamma"))))))')
+        prog.dump().should.be.equal('(Program\n  (Block\n  If((VarValue alpha)) Do((Block\n  (= beta "gamma"))))))')
 
     def test_works_for_if_with_consts(self):
         expr = """
         
-        if 1 then
+        if 1 do
             beta = 'gamma'
         end
         """
         prog = parse(expr)
-        prog.dump().should.be.equal('(Program\n  (Block\n  If((Integer 1)) Then((Block\n  (= beta "gamma"))))))')
+        prog.dump().should.be.equal('(Program\n  (Block\n  If((Integer 1)) Do((Block\n  (= beta "gamma"))))))')
 
     def test_works_for_if_with_expressions(self):
         expr = """
         
-        if 1 + 3 * 4 - 5 + 2 then
+        if 1 + 3 * 4 - 5 + 2 do
             beta = 'gamma'
         end
         """
         prog = parse(expr)
         prog.dump().should.be.equal('(Program\n  (Block\n  If((+ (- (+ 1 (* 3 4)) 5) 2)) '
-                                    'Then((Block\n  (= beta "gamma"))))))')
+                                    'Do((Block\n  (= beta "gamma"))))))')
 
     def test_works_for_if_with_strings(self):
         expr = """
         
-        if "pocoio" then
+        if "pocoio" do
             beta = 'gamma'
         end
         """
         prog = parse(expr)
         prog.dump().should.be.equal('(Program\n  (Block\n  If((String pocoio)) '
-                                    'Then((Block\n  (= beta "gamma"))))))')
+                                    'Do((Block\n  (= beta "gamma"))))))')
 
 
 class TestComparingNodes:

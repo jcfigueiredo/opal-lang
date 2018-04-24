@@ -6,7 +6,7 @@ class TestSimpleIfStatements:
         message = """Goes in."""
 
         expr = f"""
-        if true then
+        if true do
             print("{message}")
         end
         """
@@ -22,7 +22,7 @@ class TestSimpleIfStatements:
         message = """Goes out."""
 
         expr = f"""
-        if false then
+        if false do
             print("never gets here")
         else
             print("{message}")
@@ -39,13 +39,13 @@ class TestSimpleIfStatements:
     def test_works_with_variables(self, evaluator):
         expr = f"""
         exists = true
-        if exists then
+        if exists do
             print("oh yeah")
         else
             print("oh noh")
         end
         here = false
-        if here then
+        if here do
             print("it's here")
         else
             print("it's there")
@@ -61,11 +61,11 @@ class TestSimpleIfStatements:
 
     def test_works_with_comparison(self, evaluator):
         expr = f"""
-        if 10 < 20 then
+        if 10 < 20 do
             print("20!")
         end
 
-        if 1 > 2 then
+        if 1 > 2 do
             print("you're crazy")
         else
             print("one's ok")
@@ -83,43 +83,43 @@ class TestSimpleIfStatements:
 
     def test_works_with_expressions(self, evaluator):
         expr = f"""
-        if 1 + 2 * 3 then
+        if 1 + 2 * 3 do
             print("seven")            
         end
 
-        if 1 - 1 then
+        if 1 - 1 do
             print("weird")
         else
             print("zero")
         end
 
-        if 1.3 + 3.7 then
+        if 1.3 + 3.7 do
             print("5.0")
         end
 
-        if 2 > 1 then
+        if 2 > 1 do
             print("2 gt 1")
         end
                 
-        if 3 < 4 then
+        if 3 < 4 do
             print("3 lt 4")
         end
         
-        if 3 == 3 then
+        if 3 == 3 do
             print("3 eq 3")
         end
 
-        if 4 != 4 then
+        if 4 != 4 do
             print("4 neq 4")
         else
             print("4 eq 4")
         end
         
-        if 2 + 3 == 5 then
+        if 2 + 3 == 5 do
             print("2 + 3 == 5")
         end
                 
-        if (2 + 3) * 4 - 2 == 9 * 2 then
+        if (2 + 3) * 4 - 2 == 9 * 2 do
             print("eighteen")
         end
                 
