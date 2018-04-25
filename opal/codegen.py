@@ -14,7 +14,7 @@ PRIVATE_LINKAGE = 'private'
 
 class CodeGenerator:
     def __init__(self):
-        # TODO: come up with a less naïve way of handling the symtab and types
+        # TODO: come up with a less naive way of handling the symtab and types
         self.symtab = {}
         self.typetab = {}
 
@@ -22,7 +22,6 @@ class CodeGenerator:
         self.blocks = []
 
         self._add_builtins()
-        # self._add_externals()
 
         func_ty = ir.FunctionType(ir.VoidType(), [])
         func = Function(self.module, func_ty, 'main')
@@ -80,6 +79,9 @@ class CodeGenerator:
     def add_block(self, name):
         return self.current_function.append_basic_block(name)
 
+    def bitcast(self, value, type_):
+        return self.builder.bitcast(value, type_)
+
     def branch(self, block):
         self.builder.branch(block)
 
@@ -99,6 +101,9 @@ class CodeGenerator:
 
     def position_at_end(self, block):
         self.builder.position_at_end(block)
+
+    def select(self, val, true, false):
+        return self.builder.select(val, true, false)
 
     def insert_const_string(self, string):
         text = Constant.stringz(string)
@@ -173,6 +178,7 @@ class CodeGenerator:
     def visit_var(self, node):
         return Var(node.val)
 
+    # noinspection SpellCheckingInspection
     def visit_varvalue(self, node):
         name = self.symtab[node.val]
         return self.load(name)
@@ -197,7 +203,7 @@ class CodeGenerator:
         if typ is String:
             # Cast to a i8* pointer
             char_ty = val.type.pointee.element
-            str_ptr = self.builder.bitcast(val, char_ty.as_pointer())
+            str_ptr = self.bitcast(val, char_ty.as_pointer())
 
             self.call('puts', [str_ptr])
             return
@@ -206,7 +212,7 @@ class CodeGenerator:
             number = self.alloc_and_store(val, val.type)
             number_ptr = self.load(number)
 
-            buffer = self.builder.alloca(ir.ArrayType(Int8.as_llvm(), 10))
+            buffer = self.alloc(ir.ArrayType(Int8.as_llvm(), 10))
 
             buffer_ptr = self.gep(buffer, [self.const(0), self.const(0)], inbounds=True)
 
@@ -218,7 +224,10 @@ class CodeGenerator:
         if typ is Float:
             percent_g = self.visit_string(String('%g\n'))
             percent_g = self.gep(percent_g, [self.const(0), self.const(0)])
-            percent_g = self.builder.bitcast(percent_g, Int8.as_llvm().as_pointer())
+
+            value = percent_g
+            type_ = Int8.as_llvm().as_pointer()
+            percent_g = self.bitcast(value, type_)
             self.call('printf', [percent_g, val])
             return
 
@@ -234,7 +243,7 @@ class CodeGenerator:
                 else:
                     val = false
             else:
-                val = self.builder.select(val, true, false)
+                val = self.select(val, true, false)
 
             self.call('printf', [val])
 
