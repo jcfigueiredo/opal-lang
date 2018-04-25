@@ -1,21 +1,6 @@
-import re
-
-from opal.parser import get_parser
-
-
 # from lark.tree import pydot__tree_to_png  # Just a neat utility function
 # pydot__tree_to_png(self.get_parser().parse(expr), "opal-grammar.png")
-
-
-def get_representation(expr):
-    def parsed_representation(prog):
-        repres = prog.pretty()
-        repres = re.sub(r"\s+", ' ', repres)
-        return repres[:-1]
-
-    prog = get_parser().parse(f'{expr}')
-    repres = parsed_representation(prog)
-    return repres
+from tests.helpers import get_representation
 
 
 class TestLarkParser:
