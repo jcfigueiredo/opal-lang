@@ -1,6 +1,7 @@
 import re
 
-from opal.parser import get_parser
+from opal.ast import ASTVisitor
+from opal.parser import get_parser, parser
 
 
 def get_representation(expr):
@@ -13,3 +14,7 @@ def get_representation(expr):
     prog = get_parser().parse(f'{expr}')
     repres = parsed_representation(prog)
     return repres
+
+
+def parse(expr):
+    return ASTVisitor().transform(parser.parse(expr))

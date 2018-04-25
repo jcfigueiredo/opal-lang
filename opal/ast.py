@@ -103,6 +103,17 @@ class If(ASTNode):
         return s
 
 
+class While(ASTNode):
+
+    def __init__(self, cond, body):
+        self.cond = cond
+        self.body = body
+
+    def dump(self):
+        s = f'While({self.cond.dump()}) {self.body.dump()}'
+        return s
+
+
 class Assign(BinaryOp):
     op = '='
 
@@ -318,6 +329,9 @@ class ASTVisitor(InlineTransformer):
 
     def if_(self, cond, then_, else_=None):
         return If(cond, then_, else_)
+
+    def while_(self, cond, body):
+        return While(cond, body)
 
     def comp(self, lhs, op, rhs):
         node = Comparison.by(op.value)
