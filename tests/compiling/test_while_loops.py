@@ -1,8 +1,10 @@
+from wurlitzer import pipes
+
 from tests.helpers import get_representation, parse
 
 
 # noinspection PyMethodMayBeStatic
-class TestLoopSyntax:
+class TestWhileLoopSyntax:
     def test_is_supported(self):
         expr = """
         while true
@@ -15,7 +17,7 @@ class TestLoopSyntax:
         repres.should.contain('block print string "yay"')
 
 
-class TestLoopAST:
+class TestWhileLoopAST:
     def test_has_a_representation(self):
         string = "Jed Bartlet"
         expr = f"""
@@ -26,3 +28,23 @@ class TestLoopAST:
         prog = parse(expr)
         prog.dump().should.contain(f'(Program\n  (Block\n  While((Boolean true)) '
                                    f'(Block\n  (Print (String {string})))))')
+
+
+class TestWhileLoopsExecution:
+    def test_leaves_the_loop_when_test_ends(self, evaluator):
+        expr = f"""
+        a = true
+        while a
+            print('in')
+            a = false
+        end 
+        print('out')
+        """
+
+        with pipes() as (out, _):
+            evaluator.evaluate(expr)
+
+        out = out.read()
+
+        out.should.contain('in')
+        out.should.contain('out')

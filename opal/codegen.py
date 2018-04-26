@@ -6,7 +6,8 @@ from llvmlite import ir as ir
 from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
 from opal import operations as ops
-from opal.ast import Program, BinaryOp, Integer, Float, String, Print, Boolean, Assign, Var, VarValue, List, IndexOf
+from opal.ast import Program, BinaryOp, Integer, Float, String, Print, Boolean, Assign, Var, VarValue, List, IndexOf, \
+    While, If
 from opal.types import Int8, Any
 
 PRIVATE_LINKAGE = 'private'
@@ -184,7 +185,6 @@ class CodeGenerator:
         return self.load(name)
 
     def visit_print(self, node: Print):
-
         val = self.visit(node.val)
         typ = None
 
@@ -251,7 +251,7 @@ class CodeGenerator:
 
         raise NotImplementedError(f'can\'t print {node.val}')
 
-    def visit_if(self, node):
+    def visit_if(self, node: If):
         start_block = self.add_block('if.start')
         end_block = self.add_block('if.end')
         self.branch(start_block)
@@ -282,6 +282,22 @@ class CodeGenerator:
             self.position_at_end(if_false_block)
             self.visit(node.else_)
             self.branch(end_block)
+
+        self.position_at_end(end_block)
+
+    def visit_while(self, node: While):
+
+        cond_block = self.add_block('while.cond')
+        body_block = self.add_block('while.body')
+        end_block = self.add_block('while.end')
+
+        self.branch(cond_block)
+        self.position_at_end(cond_block)
+        cond = self.visit(node.cond)
+        self.cbranch(cond, body_block, end_block)
+        self.position_at_end(body_block)
+        self.visit(node.body)
+        self.branch(cond_block)
 
         self.position_at_end(end_block)
 
