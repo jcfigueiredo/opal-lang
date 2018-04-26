@@ -27,6 +27,17 @@ class TestWhileLoopSyntax:
         repres.should.contain('while_ boolean true')
         repres.should.contain('block break')
 
+    def test_supports_continue(self):
+        expr = """
+        while true
+            continue            
+        end
+        """
+
+        repres = get_representation(expr)
+        repres.should.contain('while_ boolean true')
+        repres.should.contain('block continue')
+
 
 class TestWhileLoopAST:
     def test_has_a_representation(self):
