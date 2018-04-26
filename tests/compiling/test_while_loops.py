@@ -91,3 +91,21 @@ class TestWhileLoopsExecution:
         out.should.contain('in')
         out.should_not.contain('unreachable')
         out.should.contain('out')
+
+    def test_can_include_complex_blocks(self, evaluator):
+        expr = f"""
+        num = 0
+
+        while num <= 5
+            print(num)
+            num = num + 1
+        end 
+        
+        """
+
+        with pipes() as (out, _):
+            evaluator.evaluate(expr)
+
+        out = out.read()
+
+        out.should.contain('0\n1\n2\n3\n4\n5')
