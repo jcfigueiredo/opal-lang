@@ -8,4 +8,21 @@ Opinionated Programming Algorithmic Language
 - Have fun
 - Learn how to desing a language
 
-more to come
+### TODO
+
+- [X] consts
+- [X] arythmetics
+- [X] variables
+- [x] `if` statement
+- [x] lists
+- [x] `while` loops
+- [x] `while` + `break`
+- [x] `while` + `continue`
+- [ ] `for` loops
+- [ ] functions
+
+### Tech debts
+
+- variables can only be ressigned to the same type, crashes if not
+- while loops run forever if not broken or cond always `true` 
+- arythmetics are not type restrictive
