@@ -291,6 +291,13 @@ class CodeGenerator:
 
         name = left.val
 
+        old_val = self.symtab.get(name)
+        if old_val:
+            new_val = self.builder.store(right, old_val)
+            self.symtab[name] = new_val.operands[1]
+
+            return new_val
+
         if isinstance(node.rhs, String):
             var_address = self.alloc_and_store(right, right.type, name=name)
         elif isinstance(node.rhs, List):
