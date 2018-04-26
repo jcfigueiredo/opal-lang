@@ -40,6 +40,17 @@ class TestWhileLoopAST:
         prog.dump().should.contain(f'(Program\n  (Block\n  While((Boolean true)) '
                                    f'(Block\n  (Print (String {string})))))')
 
+    def test_has_representation_for_breaks(self):
+
+        expr = """
+        while true
+            break
+        end
+        """
+        prog = parse(expr)
+        prog.dump().should.contain(f'(Program\n  (Block\n  While((Boolean true)) '
+                                   f'(Block\n  Break)))')
+
 
 class TestWhileLoopsExecution:
     def test_leaves_the_loop_when_test_ends(self, evaluator):
@@ -58,4 +69,25 @@ class TestWhileLoopsExecution:
         out = out.read()
 
         out.should.contain('in')
+        out.should.contain('out')
+
+    def test_leaves_the_loop_when_reaches_break(self, evaluator):
+        expr = f"""
+        a = true
+        while a
+            print('in')
+            break
+            print('unreachable')
+        end 
+        
+        print('out')
+        """
+
+        with pipes() as (out, _):
+            evaluator.evaluate(expr)
+
+        out = out.read()
+
+        out.should.contain('in')
+        out.should_not.contain('unreachable')
         out.should.contain('out')

@@ -18,6 +18,9 @@ class CodeGenerator:
         # TODO: come up with a less naive way of handling the symtab and types
         self.symtab = {}
         self.typetab = {}
+        self.is_break = False
+
+        self.loop_end_blocks = []
 
         self.module = Module(name='opal-lang')
         self.blocks = []
@@ -157,6 +160,8 @@ class CodeGenerator:
         Dynamically invoke the code generator for each specific node
         :param node: ASTNode
         """
+        if self.is_break:
+            return
 
         if isinstance(node, Integer) or isinstance(node, Float) or isinstance(node, Boolean):
             return self.visit_value(node)
@@ -286,20 +291,31 @@ class CodeGenerator:
         self.position_at_end(end_block)
 
     def visit_while(self, node: While):
-
         cond_block = self.add_block('while.cond')
         body_block = self.add_block('while.body')
         end_block = self.add_block('while.end')
 
+        self.loop_end_blocks.append(end_block)
+
         self.branch(cond_block)
         self.position_at_end(cond_block)
+
         cond = self.visit(node.cond)
         self.cbranch(cond, body_block, end_block)
         self.position_at_end(body_block)
         self.visit(node.body)
-        self.branch(cond_block)
+
+        if not self.is_break:
+            self.branch(cond_block)
+        else:
+            self.is_break = False
 
         self.position_at_end(end_block)
+        self.loop_end_blocks.pop()
+
+    def visit_break(self, _):
+        self.is_break = True
+        return self.branch(self.loop_end_blocks[-1])
 
     def visit_assign(self, node: Assign):
         left = self.visit(node.lhs)

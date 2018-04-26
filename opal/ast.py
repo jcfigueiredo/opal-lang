@@ -114,6 +114,11 @@ class While(ASTNode):
         return s
 
 
+class Break(ASTNode):
+    def dump(self):
+        return 'Break'
+
+
 class Assign(BinaryOp):
     op = '='
 
@@ -284,6 +289,9 @@ class ASTVisitor(InlineTransformer):
 
     def assign(self, lhs, rhs):
         return Assign(lhs, rhs)
+
+    def break_(self):
+        return Break()
 
     def name(self, id_):
         return Var(id_.value)
