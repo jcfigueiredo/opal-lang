@@ -138,7 +138,7 @@ class TestWhileLoopsExecution:
 
         while num < 4
             num = num + 1
-            if num == 2 do
+            if num == 2
                 print("inside")
                 continue
             end 

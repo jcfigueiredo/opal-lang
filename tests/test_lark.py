@@ -237,7 +237,7 @@ class TestAssignment:
 class TestConditionals:
     def test_works_for_booleans_with_no_else(self):
         expr = """
-        if true do
+        if true
             a = 1
         end
         print(a)
@@ -250,7 +250,7 @@ class TestConditionals:
 
     def test_works_for_booleans_with_else(self):
         expr = """
-        if true do
+        if true
             a = 1
         else
             a = 2
@@ -269,7 +269,7 @@ class TestConditionals:
 
     def test_works_for_multiline_else(self):
         expr = """
-        if true do
+        if true
             a = 1
             b = 2.2
         else
@@ -291,7 +291,7 @@ class TestConditionals:
     def test_works_for_variable(self):
         expr = """
         green = true
-        if green do
+        if green
             band = "day"
         end
         """

@@ -99,7 +99,7 @@ class If(ASTNode):
 
     def dump(self):
         else_ = self.else_ and f' Else({self.else_.dump()})' or ''
-        s = f'If({self.cond.dump()}) Do({self.then_.dump()})){else_}'
+        s = f'If({self.cond.dump()}) Then({self.then_.dump()})){else_}'
         return s
 
 
