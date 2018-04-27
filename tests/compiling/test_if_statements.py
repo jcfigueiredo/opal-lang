@@ -1,5 +1,141 @@
 from wurlitzer import pipes
 
+from tests.helpers import get_representation, parse
+
+
+class TestSimpleIfStatementsSyntax:
+    def test_works_for_booleans_with_no_else(self):
+        expr = """
+        if true
+            a = 1
+        end
+        print(a)
+        """
+
+        repres = get_representation(expr)
+        repres.should.contain('if_ boolean true block ')
+        repres.should.contain('assign name a int 1 ')
+        repres.should.contain('print var a')
+
+    def test_works_for_booleans_with_else(self):
+        expr = """
+        if true
+            a = 1
+        else
+            a = 2
+        end
+        """
+
+        repres = get_representation(expr)
+        repres.should.contain('if_ boolean true')
+        repres.should.contain('block assign name a int 1 ')
+        repres.should.contain('block assign name a int 2')
+        '''
+        program block if_ boolean true 
+            block assign name a int 1 
+            block assign name a int 2 
+        '''
+
+    def test_works_for_multiline_else(self):
+        expr = """
+        if true
+            a = 1
+            b = 2.2
+        else
+            "amora"
+            print(a)
+        end
+
+        1
+        false
+        """
+
+        repres = get_representation(expr)
+        repres.should.contain('if_ boolean true block')
+        repres.should.contain('assign name a int 1 ')
+        repres.should.contain('assign name b float 2.2')
+        repres.should.contain('block string "amora"')
+        repres.should.contain('print var a')
+
+    def test_works_for_variable(self):
+        expr = """
+        green = true
+        if green
+            band = "day"
+        end
+        """
+
+        repres = get_representation(expr)
+        repres.should.contain('assign name green boolean true ')
+        repres.should.contain('if_ var green block')
+        repres.should.contain('assign name band string "day"')
+
+
+class TestIfStatementsAST:
+    def test_works(self):
+        expr = """
+        if true
+            a = 10.5
+        end
+        """
+        prog = parse(expr)
+        prog.dump().should.contain('(Program\n  (Block\n  If((Boolean true)) Then((Block\n  (= a 10.5))))))')
+
+    def test_works_for_if_then_else_conditionals(self):
+        expr = """
+        if false
+            a = 'right'
+        else
+            b = 'wrong'
+        end
+        """
+        prog = parse(expr)
+        prog.dump().should.be.equal('(Program\n  (Block\n  If((Boolean false)) '
+                                    'Then((Block\n  (= a "right")))) '
+                                    'Else((Block\n  (= b "wrong")))))')
+
+    def test_works_for_if_with_variables(self):
+        expr = """
+
+        if alpha
+            beta = 'gamma'
+        end
+        """
+        prog = parse(expr)
+        prog.dump().should.be.equal('(Program\n  (Block\n  If((VarValue alpha)) Then((Block\n  (= beta "gamma"))))))')
+
+    def test_works_for_if_with_consts(self):
+        expr = """
+
+        if 1
+            beta = 'gamma'
+        end
+        """
+        prog = parse(expr)
+        prog.dump().should.be.equal('(Program\n  (Block\n  If((Integer 1)) Then((Block\n  (= beta "gamma"))))))')
+
+    def test_works_for_if_with_expressions(self):
+        expr = """
+
+        if 1 + 3 * 4 - 5 + 2
+            beta = 'gamma'
+        end
+        """
+        prog = parse(expr)
+        prog.dump().should.be.equal('(Program\n  (Block\n  If((+ (- (+ 1 (* 3 4)) 5) 2)) '
+                                    'Then((Block\n  (= beta "gamma"))))))')
+
+    def test_works_for_if_with_strings(self):
+        expr = """
+
+        if "pocoio"
+            beta = 'gamma'
+        end
+        """
+        prog = parse(expr)
+        prog.dump().should.be.equal('(Program\n  (Block\n  If((String pocoio)) '
+                                    'Then((Block\n  (= beta "gamma"))))))')
+
 
 class TestSimpleIfStatements:
     def test_handles_then_branch(self, evaluator):

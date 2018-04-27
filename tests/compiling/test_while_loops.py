@@ -139,9 +139,9 @@ class TestWhileLoopsExecution:
         while num < 4
             num = num + 1
             if num == 2
-                print("inside")
+                print("skipped")
                 continue
-            end 
+            end     
             print(num)
         end 
         
@@ -154,6 +154,6 @@ class TestWhileLoopsExecution:
         out = out.read()
 
         out.should.contain('1')
-        out.should.contain('inside')
+        out.should.contain('skipped')
         out.should.contain('3')
         out.should.contain('out')
