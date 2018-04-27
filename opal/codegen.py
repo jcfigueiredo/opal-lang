@@ -21,6 +21,7 @@ class CodeGenerator:
         self.is_break = False
 
         self.loop_end_blocks = []
+        self.loop_cond_blocks = []
 
         self.module = Module(name='opal-lang')
         self.blocks = []
@@ -257,12 +258,13 @@ class CodeGenerator:
         raise NotImplementedError(f'can\'t print {node.val}')
 
     def visit_if(self, node: If):
+
         start_block = self.add_block('if.start')
-        end_block = self.add_block('if.end')
         self.branch(start_block)
         self.position_at_end(start_block)
 
         if_true_block = self.add_block('if.true')
+        end_block = self.add_block('if.end')
 
         if isinstance(node.cond, VarValue):
             cond = self.visit(node.cond)
@@ -280,8 +282,11 @@ class CodeGenerator:
         self.cbranch(cond, if_true_block, if_false_block)
 
         self.position_at_end(if_true_block)
-        self.visit(node.then_)
-        self.branch(end_block)
+
+        ret = self.visit(node.then_)
+
+        if not ret:
+            self.branch(end_block)
 
         if node.else_:
             self.position_at_end(if_false_block)
@@ -291,10 +296,12 @@ class CodeGenerator:
         self.position_at_end(end_block)
 
     def visit_while(self, node: While):
+
         cond_block = self.add_block('while.cond')
         body_block = self.add_block('while.body')
-        end_block = self.add_block('while.end')
 
+        self.loop_cond_blocks.append(cond_block)
+        end_block = self.add_block('while.end')
         self.loop_end_blocks.append(end_block)
 
         self.branch(cond_block)
@@ -312,10 +319,16 @@ class CodeGenerator:
 
         self.position_at_end(end_block)
         self.loop_end_blocks.pop()
+        self.loop_cond_blocks.pop()
 
     def visit_break(self, _):
         self.is_break = True
         return self.branch(self.loop_end_blocks[-1])
+
+    def visit_continue(self, _):
+        br = self.loop_cond_blocks[-1]
+        self.branch(br)
+        return br
 
     def visit_assign(self, node: Assign):
         left = self.visit(node.lhs)

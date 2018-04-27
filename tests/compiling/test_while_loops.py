@@ -62,6 +62,17 @@ class TestWhileLoopAST:
         prog.dump().should.contain(f'(Program\n  (Block\n  While((Boolean true)) '
                                    f'(Block\n  Break)))')
 
+    def test_has_representation_for_continue(self):
+
+        expr = """
+        while true
+            continue
+        end
+        """
+        prog = parse(expr)
+        prog.dump().should.contain(f'(Program\n  (Block\n  While((Boolean true)) '
+                                   f'(Block\n  Continue)))')
+
 
 class TestWhileLoopsExecution:
     def test_leaves_the_loop_when_test_ends(self, evaluator):
@@ -120,3 +131,29 @@ class TestWhileLoopsExecution:
         out = out.read()
 
         out.should.contain('0\n1\n2\n3\n4\n5')
+
+    def test_skips_when_reaches_continue(self, evaluator):
+        expr = f"""
+        num = 0
+
+        while num < 4
+            num = num + 1
+            if num == 2 do
+                print("inside")
+                continue
+            end 
+            print(num)
+        end 
+        
+        print("out")
+        """
+
+        with pipes() as (out, _):
+            evaluator.evaluate(expr)
+
+        out = out.read()
+
+        out.should.contain('1')
+        out.should.contain('inside')
+        out.should.contain('3')
+        out.should.contain('out')
