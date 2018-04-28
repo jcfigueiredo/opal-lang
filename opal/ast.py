@@ -191,9 +191,6 @@ class Value(ExprAST):
 
         return self.val == o.val
 
-    def __ne__(self, o):
-        return not self.__eq__(o)
-
     def dump(self):
         return f'({self.__class__.__name__} {self.val})'
 
@@ -205,9 +202,6 @@ class Print(Value, types.Any):
 
     def __eq__(self, o):
         return self.val == o.val
-
-    def __ne__(self, o):
-        return not self.__eq__(o)
 
     def dump(self):
         return f'({self.__class__.__name__} {self.val.dump()})'
@@ -281,11 +275,7 @@ class IndexOf(ASTNode):
 # noinspection PyMethodMayBeStatic
 class ASTVisitor(InlineTransformer):
     def program(self, body):
-        if isinstance(body, Block):
-            program = Program(body)
-        else:
-            program = Program(Block([body]))
-
+        program = Program(body)
         return program
 
     def block(self, *args):
