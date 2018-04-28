@@ -322,11 +322,6 @@ class CodeGenerator:
         self.is_break = True
         return self.branch(self.loop_end_blocks[-1])
 
-    def visit_continue(self, _):
-        br = self.loop_cond_blocks[-1]
-        self.branch(br)
-        return br
-
     def visit_assign(self, node: Assign):
         left = self.visit(node.lhs)
         right = self.visit(node.rhs)

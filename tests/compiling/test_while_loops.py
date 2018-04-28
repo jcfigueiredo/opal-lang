@@ -145,6 +145,7 @@ class TestWhileLoopsExecution:
             if num == 5
                 print("again")
                 continue
+                print("never here")
             end     
             print(num)
         end 
@@ -163,3 +164,4 @@ class TestWhileLoopsExecution:
         out.should.contain('again')
         out.should.contain('6')
         out.should.contain('out')
+        out.should_not.contain('never here')
