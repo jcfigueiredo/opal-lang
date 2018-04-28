@@ -136,10 +136,14 @@ class TestWhileLoopsExecution:
         expr = f"""
         num = 0
 
-        while num < 4
+        while num <= 6
             num = num + 1
             if num == 2
                 print("skipped")
+                continue
+            end     
+            if num == 5
+                print("again")
                 continue
             end     
             print(num)
@@ -156,4 +160,6 @@ class TestWhileLoopsExecution:
         out.should.contain('1')
         out.should.contain('skipped')
         out.should.contain('3')
+        out.should.contain('again')
+        out.should.contain('6')
         out.should.contain('out')

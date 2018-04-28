@@ -7,7 +7,7 @@ from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
 from opal import operations as ops
 from opal.ast import Program, BinaryOp, Integer, Float, String, Print, Boolean, Assign, Var, VarValue, List, IndexOf, \
-    While, If
+    While, If, Continue
 from opal.types import Int8, Any
 
 PRIVATE_LINKAGE = 'private'
@@ -88,11 +88,11 @@ class CodeGenerator:
         return self.builder.bitcast(value, type_)
 
     def branch(self, block):
-        self.builder.branch(block)
+        return self.builder.branch(block)
 
     # noinspection SpellCheckingInspection
     def cbranch(self, cond, true_block, false_block):
-        self.builder.cbranch(cond, true_block, false_block)
+        return self.builder.cbranch(cond, true_block, false_block)
 
     def gep(self, ptr, indices, inbounds=False, name=''):
         return self.builder.gep(ptr, indices, inbounds, name)
@@ -105,7 +105,7 @@ class CodeGenerator:
         return self.builder.load(name)
 
     def position_at_end(self, block):
-        self.builder.position_at_end(block)
+        return self.builder.position_at_end(block)
 
     def select(self, val, true, false):
         return self.builder.select(val, true, false)
@@ -266,10 +266,7 @@ class CodeGenerator:
         if_true_block = self.add_block('if.true')
         end_block = self.add_block('if.end')
 
-        if isinstance(node.cond, VarValue):
-            cond = self.visit(node.cond)
-        else:
-            cond = self.visit(node.cond)
+        cond = self.visit(node.cond)
 
         if cond.type != Boolean.as_llvm():
             cond = self.cast(cond, Boolean)
@@ -283,10 +280,9 @@ class CodeGenerator:
 
         self.position_at_end(if_true_block)
 
-        ret = self.visit(node.then_)
+        self.visit(node.then_)
 
-        if not ret:
-            self.branch(end_block)
+        self.branch(end_block)
 
         if node.else_:
             self.position_at_end(if_false_block)
@@ -310,6 +306,7 @@ class CodeGenerator:
         cond = self.visit(node.cond)
         self.cbranch(cond, body_block, end_block)
         self.position_at_end(body_block)
+
         self.visit(node.body)
 
         if not self.is_break:
@@ -386,6 +383,9 @@ class CodeGenerator:
     def visit_block(self, node):
         ret = None
         for stmt in node.statements:
+            # TODO: This won't work but keeping this for now
+            if isinstance(stmt, Continue):
+                return
             temp = self.visit(stmt)
             if temp:
                 ret = temp

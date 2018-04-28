@@ -3,7 +3,7 @@ from wurlitzer import pipes
 from tests.helpers import get_representation, parse
 
 
-class TestSimpleIfStatementsSyntax:
+class TestIfStatementsSyntax:
     def test_works_for_booleans_with_no_else(self):
         expr = """
         if true
@@ -137,7 +137,7 @@ class TestIfStatementsAST:
                                     'Then((Block\n  (= beta "gamma"))))))')
 
 
-class TestSimpleIfStatements:
+class TestIfStatements:
     def test_handles_then_branch(self, evaluator):
         message = """Goes in."""
 
@@ -207,7 +207,6 @@ class TestSimpleIfStatements:
             print("one's ok")
         end
         """
-        # evaluator.evaluate(expr)
 
         with pipes() as (out, _):
             evaluator.evaluate(expr)
@@ -216,6 +215,44 @@ class TestSimpleIfStatements:
 
         out.should.contain('20!')
         out.should.contain('one\'s ok')
+
+    def test_can_be_nested(self, evaluator):
+        expr = f"""
+        a = true 
+        b = true
+        
+        if a
+            if b
+                print("nested")
+            end
+        end
+        """
+
+        with pipes() as (out, _):
+            evaluator.evaluate(expr)
+
+        out = out.read()
+
+        out.should.contain('nested')
+
+    def test_can_define_variables_inside_blocks(self, evaluator):
+        expr = f"""
+        a = true 
+        
+        if a
+            b = true
+            if b
+                print("b in block")
+            end
+        end
+        """
+
+        with pipes() as (out, _):
+            evaluator.evaluate(expr)
+
+        out = out.read()
+
+        out.should.contain('b in block')
 
     def test_works_with_expressions(self, evaluator):
         expr = f"""
@@ -261,7 +298,6 @@ class TestSimpleIfStatements:
                 
         """
 
-        # evaluator.evaluate(expr)
         with pipes() as (out, _):
             evaluator.evaluate(expr)
 
