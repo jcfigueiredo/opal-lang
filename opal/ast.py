@@ -110,8 +110,18 @@ class While(ASTNode):
         self.body = body
 
     def dump(self):
-        s = f'While({self.cond.dump()}) {self.body.dump()}'
-        return s
+        return f'While({self.cond.dump()}) {self.body.dump()}'
+
+
+class For(ASTNode):
+
+    def __init__(self, var, iterable, body):
+        self.var = var
+        self.iterable = iterable
+        self.body = body
+
+    def dump(self):
+        return f'For({self.var.dump()} in {self.iterable.dump()}) {self.body.dump()}'
 
 
 class Break(ASTNode):
@@ -338,6 +348,9 @@ class ASTVisitor(InlineTransformer):
 
     def while_(self, cond, body):
         return While(cond, body)
+
+    def for_(self, var, iterable, body):
+        return For(var, iterable, body)
 
     def comp(self, lhs, op, rhs):
         node = Comparison.by(op.value)

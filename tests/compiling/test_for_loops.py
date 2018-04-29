@@ -59,3 +59,47 @@ class TestForLoopSyntax:
         repres = get_representation(expr)
         repres.should.contain('for_ var item var list')
         repres.should.contain('block continue')
+
+
+class TestForLoopAST:
+    def test_has_a_representation(self):
+        expr = """
+        for item in list
+            print(item)
+        end
+        """
+        prog = parse(expr)
+        prog.dump().should.contain(f'(Program\n  (Block\n  For((VarValue item) in (VarValue list)) '
+                                   f'(Block\n  (Print (VarValue item)))))')
+
+    def test_has_a_representation_for_lists(self):
+        expr = """
+        for item in [1, 2, 3]
+            print(item)
+        end
+        """
+        prog = parse(expr)
+        prog.dump().should.contain(
+            f'(Program\n  (Block\n  For((VarValue item) in [(Integer 1), (Integer 2), (Integer 3)]) '
+            f'(Block\n  (Print (VarValue item)))))')
+
+    def test_has_representation_for_breaks(self):
+        expr = """
+        for item in list
+            break
+        end
+        """
+        prog = parse(expr)
+        prog.dump().should.contain(f'(Program\n  (Block\n  For((VarValue item) in (VarValue list)) '
+                                   f'(Block\n  Break)))')
+
+    def test_has_representation_for_continue(self):
+        expr = """
+        for item in list
+            continue
+        end
+        """
+
+        prog = parse(expr)
+        prog.dump().should.contain(f'(Program\n  (Block\n  For((VarValue item) in (VarValue list)) '
+                                   f'(Block\n  Continue)))')
