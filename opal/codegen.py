@@ -3,11 +3,12 @@ from hashlib import sha3_256
 # noinspection PyPackageRequirements
 from llvmlite import binding as llvm
 from llvmlite import ir as ir
+from llvmlite.ir import PointerType
 from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
 from opal import operations as ops
 from opal.ast import Program, BinaryOp, Integer, Float, String, Print, Boolean, Assign, Var, VarValue, List, IndexOf, \
-    While, If, Continue, For
+    While, If, Continue, For, Value
 from opal.types import Int8, Any
 
 PRIVATE_LINKAGE = 'private'
@@ -204,11 +205,10 @@ class CodeGenerator:
     def visit_print(self, node: Print):
         val = self.visit(node.val)
         typ = None
-
         if isinstance(node.val, VarValue):
             typ = self.typetab[node.val.val]
 
-        if isinstance(node.val, String):
+        if isinstance(node.val, String) or isinstance(typ, PointerType):
             typ = String
         elif isinstance(node.val, Integer) or val.type is Integer.as_llvm():
             typ = Integer
@@ -353,13 +353,6 @@ class CodeGenerator:
 
         self.position_at_end(body_block)
 
-
-
-
-
-        import ipdb; ipdb.set_trace();
-
-
         self.loop_end_blocks.pop()
         self.loop_cond_blocks.pop()
 
@@ -370,29 +363,35 @@ class CodeGenerator:
     def visit_assign(self, node: Assign):
         left = self.visit(node.lhs)
         rhs = node.rhs
+        value = self.visit(rhs)
 
         name = left.val
 
-        var_address = self.assign(name, rhs)
+        if isinstance(rhs, String):
+            typ = value.type
+        elif isinstance(rhs, List):
+            typ = List.as_llvm().as_pointer()
+        elif not isinstance(rhs, Value):
+            value = self.visit(rhs)
+            typ = value.type
+        else:
+            typ = rhs.as_llvm()
 
+        var_address = self.assign(name, value, typ)
         return var_address
 
-    def assign(self, name, rhs):
-        value = self.visit(rhs)
+    def assign(self, name, value, typ):
+
         old_val = self.symtab.get(name)
         if old_val:
             new_val = self.builder.store(value, old_val)
             self.symtab[name] = new_val.operands[1]
             return new_val
 
-        if isinstance(rhs, String):
-            var_address = self.alloc_and_store(value, value.type, name=name)
-        elif isinstance(rhs, List):
-            var_address = self.alloc_and_store(value, List.as_llvm().as_pointer())
-        else:
-            var_address = self.alloc_and_store(value, rhs.as_llvm(), name=name)
+        var_address = self.alloc_and_store(value, typ, name=name)
+
         self.symtab[name] = var_address
-        self.typetab[name] = rhs.__class__
+        self.typetab[name] = typ
         return var_address
 
     def visit_list(self, node: List):
