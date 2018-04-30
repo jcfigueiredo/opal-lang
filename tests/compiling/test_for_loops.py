@@ -13,7 +13,7 @@ class TestForLoopSyntax:
         """
 
         repres = get_representation(expr)
-        repres.should.contain('for_ var item var list')
+        repres.should.contain('for_ name item var list')
         repres.should.contain('block print var item')
 
     def test_is_supported_with_list(self):
@@ -24,7 +24,7 @@ class TestForLoopSyntax:
         """
 
         repres = get_representation(expr)
-        repres.should.contain('for_ var item list int 1 int 2 int 3')
+        repres.should.contain('for_ name item list int 1 int 2 int 3')
         repres.should.contain('block print var item')
 
     def test_is_supported(self):
@@ -35,7 +35,7 @@ class TestForLoopSyntax:
         """
 
         repres = get_representation(expr)
-        repres.should.contain('for_ var item var list')
+        repres.should.contain('for_ name item var list')
         repres.should.contain('block print var item')
 
     def test_supports_break(self):
@@ -46,7 +46,7 @@ class TestForLoopSyntax:
         """
 
         repres = get_representation(expr)
-        repres.should.contain('for_ var item var list')
+        repres.should.contain('for_ name item var list')
         repres.should.contain('block break')
 
     def test_supports_continue(self):
@@ -57,7 +57,7 @@ class TestForLoopSyntax:
         """
 
         repres = get_representation(expr)
-        repres.should.contain('for_ var item var list')
+        repres.should.contain('for_ name item var list')
         repres.should.contain('block continue')
 
 
@@ -69,7 +69,7 @@ class TestForLoopAST:
         end
         """
         prog = parse(expr)
-        prog.dump().should.contain(f'(Program\n  (Block\n  For((VarValue item) in (VarValue list)) '
+        prog.dump().should.contain(f'(Program\n  (Block\n  For((Var item) in (VarValue list)) '
                                    f'(Block\n  (Print (VarValue item)))))')
 
     def test_has_a_representation_for_lists(self):
@@ -80,7 +80,7 @@ class TestForLoopAST:
         """
         prog = parse(expr)
         prog.dump().should.contain(
-            f'(Program\n  (Block\n  For((VarValue item) in [(Integer 1), (Integer 2), (Integer 3)]) '
+            f'(Program\n  (Block\n  For((Var item) in [(Integer 1), (Integer 2), (Integer 3)]) '
             f'(Block\n  (Print (VarValue item)))))')
 
     def test_has_representation_for_breaks(self):
@@ -90,7 +90,7 @@ class TestForLoopAST:
         end
         """
         prog = parse(expr)
-        prog.dump().should.contain(f'(Program\n  (Block\n  For((VarValue item) in (VarValue list)) '
+        prog.dump().should.contain(f'(Program\n  (Block\n  For((Var item) in (VarValue list)) '
                                    f'(Block\n  Break)))')
 
     def test_has_representation_for_continue(self):
@@ -101,5 +101,8 @@ class TestForLoopAST:
         """
 
         prog = parse(expr)
-        prog.dump().should.contain(f'(Program\n  (Block\n  For((VarValue item) in (VarValue list)) '
+        prog.dump().should.contain(f'(Program\n  (Block\n  For((Var item) in (VarValue list)) '
                                    f'(Block\n  Continue)))')
+
+
+
