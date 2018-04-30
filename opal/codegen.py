@@ -7,7 +7,7 @@ from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
 from opal import operations as ops
 from opal.ast import Program, BinaryOp, Integer, Float, String, Print, Boolean, Assign, Var, VarValue, List, IndexOf, \
-    While, If, Continue
+    While, If, Continue, For
 from opal.types import Int8, Any
 
 PRIVATE_LINKAGE = 'private'
@@ -73,11 +73,22 @@ class CodeGenerator:
         vector_get_ty = ir.FunctionType(Integer.as_llvm(), [List.as_llvm().as_pointer(), Integer.as_llvm()])
         ir.Function(self.module, vector_get_ty, 'vector_get')
 
+        vector_size_ty = ir.FunctionType(Integer.as_llvm(), [List.as_llvm().as_pointer()])
+        ir.Function(self.module, vector_size_ty, 'vector_size')
+
     def alloc(self, typ, name=''):
         return self.builder.alloca(typ, name=name)
 
     def alloc_and_store(self, val, typ, name=''):
         var_addr = self.alloc(typ, name)
+        self.builder.store(val, var_addr)
+        return var_addr
+
+    def alloc_assign_store(self, val, name, typ):
+        current_block = self.builder.block
+        var_addr = self.builder.alloca(typ, name=name)
+        self.assign(name, var_addr)
+        self.builder.position_at_end(current_block)
         self.builder.store(val, var_addr)
         return var_addr
 
@@ -318,33 +329,70 @@ class CodeGenerator:
         self.loop_end_blocks.pop()
         self.loop_cond_blocks.pop()
 
+    def visit_for(self, node: For):
+        init_block = self.add_block('for.init')
+        cond_block = self.add_block('for.cond')
+        self.loop_cond_blocks.append(cond_block)
+
+        body_block = self.add_block('for.body')
+        end_block = self.add_block('for.end')
+        self.loop_end_blocks.append(end_block)
+
+        self.branch(init_block)
+        self.position_at_end(init_block)
+        vector = self.visit(node.iterable)
+        size = self.call('vector_size', [vector])
+        index = self.alloc_and_store(self.const(0), Integer.as_llvm(), 'index')
+
+        self.branch(cond_block)
+        self.position_at_end(cond_block)
+
+        should_go_on = self.builder.icmp_signed('<=', index, size)
+
+        self.cbranch(should_go_on, body_block, end_block)
+
+        self.position_at_end(body_block)
+
+
+
+
+
+        import ipdb; ipdb.set_trace();
+
+
+        self.loop_end_blocks.pop()
+        self.loop_cond_blocks.pop()
+
     def visit_break(self, _):
         self.is_break = True
         return self.branch(self.loop_end_blocks[-1])
 
     def visit_assign(self, node: Assign):
         left = self.visit(node.lhs)
-        right = self.visit(node.rhs)
+        rhs = node.rhs
 
         name = left.val
 
+        var_address = self.assign(name, rhs)
+
+        return var_address
+
+    def assign(self, name, rhs):
+        value = self.visit(rhs)
         old_val = self.symtab.get(name)
         if old_val:
-            new_val = self.builder.store(right, old_val)
+            new_val = self.builder.store(value, old_val)
             self.symtab[name] = new_val.operands[1]
-
             return new_val
 
-        if isinstance(node.rhs, String):
-            var_address = self.alloc_and_store(right, right.type, name=name)
-        elif isinstance(node.rhs, List):
-            var_address = self.alloc_and_store(right, List.as_llvm().as_pointer())
+        if isinstance(rhs, String):
+            var_address = self.alloc_and_store(value, value.type, name=name)
+        elif isinstance(rhs, List):
+            var_address = self.alloc_and_store(value, List.as_llvm().as_pointer())
         else:
-            var_address = self.alloc_and_store(right, node.rhs.as_llvm(), name=name)
-
+            var_address = self.alloc_and_store(value, rhs.as_llvm(), name=name)
         self.symtab[name] = var_address
-        self.typetab[name] = node.rhs.__class__
-
+        self.typetab[name] = rhs.__class__
         return var_address
 
     def visit_list(self, node: List):

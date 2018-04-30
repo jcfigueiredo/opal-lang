@@ -51,3 +51,7 @@ void vector_double_capacity_if_full(Vector *vector) {
 void vector_free(Vector *vector) {
   free(vector->data);
 }
+
+int vector_size(Vector *vector) {
+  return vector->size;
+}

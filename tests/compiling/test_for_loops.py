@@ -105,4 +105,19 @@ class TestForLoopAST:
                                    f'(Block\n  Continue)))')
 
 
-
+# class TestForLoopsExecution:
+#     def test_leaves_the_loop_when_test_ends(self, evaluator):
+#         expr = f"""
+#         a_list = [2, 4, 6]
+#         for item in a_list
+#             print(item)
+#         end
+#         """
+#         evaluator.evaluate(expr)
+#         return
+#         with pipes() as (out, _):
+#             evaluator.evaluate(expr)
+#
+#         out = out.read()
+#
+#         out.should.contain('2\n4\n6')
