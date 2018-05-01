@@ -85,13 +85,13 @@ class CodeGenerator:
         self.builder.store(val, var_addr)
         return var_addr
 
-    def alloc_assign_store(self, val, name, typ):
-        current_block = self.builder.block
-        var_addr = self.builder.alloca(typ, name=name)
-        self.assign(name, var_addr)
-        self.builder.position_at_end(current_block)
-        self.builder.store(val, var_addr)
-        return var_addr
+    # def alloc_assign_store(self, name, val, typ):
+    #     current_block = self.builder.block
+    #     var_addr = self.builder.alloca(typ, name=name)
+    #     self.assign(name, var_addr, typ)
+    #     self.builder.position_at_end(current_block)
+    #     self.builder.store(val, var_addr)
+    #     return var_addr
 
     def add_block(self, name):
         return self.current_function.append_basic_block(name)
@@ -113,8 +113,8 @@ class CodeGenerator:
         assert isinstance(node, Program)
         return self.visit(node)
 
-    def load(self, name):
-        return self.builder.load(name)
+    def load(self, ptr, name=''):
+        return self.builder.load(ptr, name)
 
     def position_at_end(self, block):
         return self.builder.position_at_end(block)
@@ -341,17 +341,34 @@ class CodeGenerator:
         self.branch(init_block)
         self.position_at_end(init_block)
         vector = self.visit(node.iterable)
+
         size = self.call('vector_size', [vector])
+
+        size = self.alloc_and_store(size, Integer.as_llvm(), name='size')
         index = self.alloc_and_store(self.const(0), Integer.as_llvm(), 'index')
 
         self.branch(cond_block)
         self.position_at_end(cond_block)
 
-        should_go_on = self.builder.icmp_signed('<=', index, size)
+        should_go_on = self.builder.icmp_signed('<', self.load(index), self.load(size))
 
         self.cbranch(should_go_on, body_block, end_block)
 
         self.position_at_end(body_block)
+
+        pos = self.load(index)
+
+        val = self.call('vector_get', [vector, pos])
+        val = self.alloc_and_store(val, Integer.as_llvm())
+        val = self.load(val)
+        self.assign(node.var.val, val, Integer.as_llvm())
+
+        self.visit(node.body)
+
+        self.builder.store(self.builder.add(self.const(1), pos), index)
+        self.branch(cond_block)
+
+        self.position_at_end(end_block)
 
         self.loop_end_blocks.pop()
         self.loop_cond_blocks.pop()
