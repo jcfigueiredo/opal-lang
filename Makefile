@@ -8,7 +8,8 @@ help:
 	@echo "   make convert_c_to_ir"
 
 test: convert_c_to_ir
-	@py.test --testdox --cov-branch --cov-report term-missing --cov-report=html --cov=opal --cov-config .coveragerc --color=yes
+	@mkdir -p ./htmlcov/
+	@py.test --testdox --cov-branch --junit-xml=./htmlcov/test-results.xml --cov-report term-missing --cov-report=html --cov=opal --cov-config .coveragerc --color=yes
 	@rm resources/coverage.svg
 	@coverage-badge -o resources/coverage.svg
 
