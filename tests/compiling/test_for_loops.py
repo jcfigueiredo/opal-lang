@@ -142,3 +142,31 @@ class TestForLoopsExecution:
         out.should_not.contain('600')
         out.should_not.contain('unreachable')
         out.should.contain('out')
+
+    def test_skips_when_reaches_continue(self, evaluator):
+        expr = f"""
+        a_list = [1, 2, 3 ,4, 5]
+        for item in a_list
+            if item == 3
+                print("skipped") 
+                continue
+                print("never here")
+            end
+            print(item)
+        end 
+
+        print("out")
+        """
+
+        with pipes() as (out, _):
+            evaluator.evaluate(expr)
+
+        out = out.read()
+
+        out.should.contain('1')
+        out.should.contain('2')
+        out.should.contain('skipped')
+        out.should.contain('4')
+        out.should.contain('5')
+        out.should.contain('out')
+        out.should_not.contain('never here')
