@@ -34,10 +34,6 @@ jobs:
             . venv/bin/activate
             pip install -r requirements-tests.txt
 
-      - store_artifacts:
-          path: ./htmlcov/test-results.xml
-          destination: pytest
-
       - save_cache:
           paths:
             - ./venv
@@ -57,3 +53,6 @@ jobs:
       - store_artifacts:
           path: htmlcov
           destination: htmlcov
+
+      - store_test_results:
+        path: ./htmlcov/test-results.xml
