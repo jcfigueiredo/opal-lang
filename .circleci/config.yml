@@ -55,4 +55,4 @@ jobs:
           destination: htmlcov
 
       - store_test_results:
-        path: ./htmlcov/test-results.xml
+          path: ./htmlcov/test-results.xml
