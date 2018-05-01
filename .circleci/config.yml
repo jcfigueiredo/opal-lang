@@ -54,5 +54,9 @@ jobs:
           path: htmlcov
           destination: htmlcov
 
+      - store_artifacts:
+          path: htmlcov/test-results.xml
+          destination: htmlcov/junit/results.xml
+
       - store_test_results:
-          path: ./htmlcov/test-results.xml
+          path: htmlcov/
