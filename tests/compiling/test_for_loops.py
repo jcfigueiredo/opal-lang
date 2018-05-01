@@ -120,3 +120,25 @@ class TestForLoopsExecution:
         out = out.read()
 
         out.should.contain('2\n4\n6')
+
+    def test_leaves_the_loop_when_reaches_break(self, evaluator):
+        expr = f"""
+        a_list = [200, 600]
+        for item in a_list
+            print(item)
+            break
+            print('unreachable')
+        end 
+
+        print('out')
+        """
+
+        with pipes() as (out, _):
+            evaluator.evaluate(expr)
+
+        out = out.read()
+
+        out.should.contain('200')
+        out.should_not.contain('600')
+        out.should_not.contain('unreachable')
+        out.should.contain('out')

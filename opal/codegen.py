@@ -361,15 +361,18 @@ class CodeGenerator:
         val = self.call('vector_get', [vector, pos])
         val = self.alloc_and_store(val, Integer.as_llvm())
         val = self.load(val)
+
         self.assign(node.var.val, val, Integer.as_llvm())
 
         self.visit(node.body)
 
-        self.builder.store(self.builder.add(self.const(1), pos), index)
-        self.branch(cond_block)
+        if not self.is_break:
+            self.builder.store(self.builder.add(self.const(1), pos), index)
+            self.branch(cond_block)
+        else:
+            self.is_break = False
 
         self.position_at_end(end_block)
-
         self.loop_end_blocks.pop()
         self.loop_cond_blocks.pop()
 
