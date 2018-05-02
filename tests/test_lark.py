@@ -225,53 +225,6 @@ class TestAssignment:
         repres = get_representation(expr)
         repres.should.contain('assign name alpha var beta')
 
-    def test_assigns_lists(self):
-        expr = """
-        arr = [1, 2, 3]
-        """
-
-        repres = get_representation(expr)
-        repres.should.contain('assign name arr list int 1 int 2 int 3')
-
-
-class Testlist:
-    def test_with_multiple_items_is_supported(self):
-        expr = "[1, 2, 3]"
-
-        repres = get_representation(expr)
-
-        repres.should.equal('program block list int 1 int 2 int 3')
-
-    def test_with_one_item_is_supported(self):
-        expr = "[77]"
-
-        repres = get_representation(expr)
-
-        repres.should.equal('program block list int 77')
-
-    def test_empty_is_supported(self):
-        expr = "[]"
-
-        repres = get_representation(expr)
-
-        repres.should.equal('program block list')
-
-
-class TestListAccess:
-    def test_works_for_explicit_lists(self):
-        expr = "[10, 20, 30][2]"
-
-        repres = get_representation(expr)
-
-        repres.should.equal('program block list_access list int 10 int 20 int 30 index int 2')
-
-    def test_works_for_variables(self):
-        expr = "epta[22]"
-
-        repres = get_representation(expr)
-
-        repres.should.equal('program block list_access var epta index int 22')
-
 
 class TestSpecialCases:
     def test_handles_true_when_true_its_only_statement(self):
