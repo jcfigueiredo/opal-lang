@@ -263,19 +263,4 @@ class TestBinaryOperationNodes:
         add.__eq__.when.called_with(v1).should.throw(LogicError, expected_message)
 
 
-class TestLists:
-    def test_have_a_representation(self):
-        prog = parse("[10, 20, 25]")
-        prog.dump().should.contain('(Block\n  [(Integer 10), (Integer 20), (Integer 25)])')
-
-        prog = parse("[100]")
-        prog.dump().should.contain('(Block\n  [(Integer 100)])')
-
-        prog = parse("[]")
-        prog.dump().should.contain('(Block\n  [])')
-
-    def test_have_a_representation_for_accessing_index(self):
-        prog = parse("[10, 20, 25][2]")
-        prog.dump().should.contain('(Block\n  (position 2 [(Integer 10), (Integer 20), (Integer 25)]))')
-
 

@@ -1,6 +1,6 @@
 from wurlitzer import pipes
 
-from tests.helpers import get_representation
+from tests.helpers import get_representation, parse
 
 
 class TestListSyntax:
@@ -12,7 +12,14 @@ class TestListSyntax:
         repres = get_representation(expr)
         repres.should.contain('assign name arr list int 1 int 2 int 3')
 
-    def test_with_multiple_items_is_supported(self):
+    def test_with_multiple_items(self):
+        expr = "[1, \"abacabb\", true, 5 * 10]"
+
+        repres = get_representation(expr)
+
+        repres.should.equal('program block list int 1 string "abacabb" boolean true mul int 5 int 10')
+
+    def test_with_items_of_different_types(self):
         expr = "[1, 2, 3]"
 
         repres = get_representation(expr)
@@ -34,7 +41,7 @@ class TestListSyntax:
         repres.should.equal('program block list')
 
 
-class TestListAccess:
+class TestListAccessSyntax:
     def test_works_for_explicit_lists(self):
         expr = "[10, 20, 30][2]"
 
@@ -48,6 +55,22 @@ class TestListAccess:
         repres = get_representation(expr)
 
         repres.should.equal('program block list_access var epta index int 22')
+
+
+class TestListsAST:
+    def test_have_a_representation(self):
+        prog = parse("[10, 20, 25]")
+        prog.dump().should.contain('(Block\n  [(Integer 10), (Integer 20), (Integer 25)])')
+
+        prog = parse("[100]")
+        prog.dump().should.contain('(Block\n  [(Integer 100)])')
+
+        prog = parse("[]")
+        prog.dump().should.contain('(Block\n  [])')
+
+    def test_have_a_representation_for_accessing_index(self):
+        prog = parse("[10, 20, 25][2]")
+        prog.dump().should.contain('(Block\n  (position 2 [(Integer 10), (Integer 20), (Integer 25)]))')
 
 
 class TestListExecution:
