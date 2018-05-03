@@ -33,7 +33,7 @@ class String(Any):
 
 
 class Vector(Any):
-    _llvm_type = ir.LiteralStructType([Int.as_llvm(), Int.as_llvm(), Int.as_llvm().as_pointer()])
+    _llvm_type = ir.LiteralStructType([Int.as_llvm(), Int.as_llvm(), Int8.as_llvm().as_pointer().as_pointer()])
 
 # type_map = {
 # 	ANY: ir.VoidType(),

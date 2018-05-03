@@ -78,17 +78,18 @@ class TestListsAST:
 
 
 class TestListExecution:
-    def test_starts(self, evaluator):
+    # ugly naming, yeah
+    def test_generates_the_correct_ir(self, evaluator):
         expr = f"""
         [1, 2, 3]
         """
 
         evaluator.evaluate(expr, run=False)
-
-        str(evaluator.llvm_mod).should.contain('call void @vector_init({ i32, i32, i32* }* %.2)')
-        str(evaluator.llvm_mod).should.contain('call void @vector_append({ i32, i32, i32* }* %.2, i32 1)')
-        str(evaluator.llvm_mod).should.contain('call void @vector_append({ i32, i32, i32* }* %.2, i32 2)')
-        str(evaluator.llvm_mod).should.contain('call void @vector_append({ i32, i32, i32* }* %.2, i32 3)')
+        print(evaluator.llvm_mod)
+        str(evaluator.llvm_mod).should.contain('call void @vector_init({ i32, i32, i8** }* %.2)')
+        str(evaluator.llvm_mod).should.contain('call void @vector_append({ i32, i32, i8** }* %.2, i8* %.4)')
+        str(evaluator.llvm_mod).should.contain('call void @vector_append({ i32, i32, i8** }* %.2, i8* %.6)')
+        str(evaluator.llvm_mod).should.contain('call void @vector_append({ i32, i32, i8** }* %.2, i8* %.8)')
 
     def test_supports_access_by_index(self, evaluator):
         expr = f"""
@@ -97,7 +98,7 @@ class TestListExecution:
 
         evaluator.evaluate(expr, run=False)
 
-        str(evaluator.llvm_mod).should.contain('call i32 @vector_get({ i32, i32, i32* }* %.2, i32 4)')
+        str(evaluator.llvm_mod).should.contain('call i8* @vector_get({ i32, i32, i8** }* %.2, i32 4)')
 
     def test_items_can_be_printed(self, evaluator):
         expr = f"""
@@ -123,3 +124,20 @@ class TestListExecution:
         out = out.read()
 
         out.should.contain('234')
+
+    # def test_supports_items_of_different_types(self, evaluator):
+    #     expr = f"""
+    #     h_list = ["aba", 200, true]
+    #     print(h_list[0])
+    #     print(h_list[1])
+    #     print(h_list[2])
+    #     """
+    #
+    #     with pipes() as (out, _):
+    #         evaluator.evaluate(expr)
+    #
+    #     out = out.read()
+    #
+    #     out.should.contain('aba')
+    #     out.should.contain('200')
+    #     out.should.contain('true')

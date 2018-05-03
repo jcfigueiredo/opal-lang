@@ -68,10 +68,10 @@ class CodeGenerator:
         vector_init_ty = ir.FunctionType(Any.as_llvm(), [List.as_llvm().as_pointer()])
         ir.Function(self.module, vector_init_ty, 'vector_init')
 
-        vector_append_ty = ir.FunctionType(Any.as_llvm(), [List.as_llvm().as_pointer(), Integer.as_llvm()])
+        vector_append_ty = ir.FunctionType(Any.as_llvm(), [List.as_llvm().as_pointer(), Int8.as_llvm().as_pointer()])
         ir.Function(self.module, vector_append_ty, 'vector_append')
 
-        vector_get_ty = ir.FunctionType(Integer.as_llvm(), [List.as_llvm().as_pointer(), Integer.as_llvm()])
+        vector_get_ty = ir.FunctionType(Int8.as_llvm().as_pointer(), [List.as_llvm().as_pointer(), Integer.as_llvm()])
         ir.Function(self.module, vector_get_ty, 'vector_get')
 
         vector_size_ty = ir.FunctionType(Integer.as_llvm(), [List.as_llvm().as_pointer()])
@@ -359,8 +359,7 @@ class CodeGenerator:
         pos = self.load(index)
 
         val = self.call('vector_get', [vector, pos])
-        val = self.alloc_and_store(val, Integer.as_llvm())
-        val = self.load(val)
+        val = self.builder.ptrtoint(val, Integer.as_llvm())
 
         self.assign(node.var.val, val, Integer.as_llvm())
 
@@ -419,13 +418,15 @@ class CodeGenerator:
         self.call('vector_init', [vector])
         for item in node.items:
             val = self.visit(item)
-            self.call('vector_append', [vector, val])
+            self.call('vector_append', [vector, self.builder.inttoptr(val, Int8.as_llvm().as_pointer())])
         return vector
 
     def visit_indexof(self, node: IndexOf):
         index = self.visit(node.index)
         vector = self.visit(node.lst)
-        return self.call('vector_get', [vector, index])
+        item = self.call('vector_get', [vector, index])
+
+        return self.builder.ptrtoint(item, Integer.as_llvm())
 
     def visit_binop(self, node):
 
