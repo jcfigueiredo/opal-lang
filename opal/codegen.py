@@ -96,6 +96,21 @@ class CodeGenerator:
     def add_block(self, name):
         return self.current_function.append_basic_block(name)
 
+    def assign(self, name, value, typ):
+
+        old_val = self.symtab.get(name)
+        if old_val:
+            new_val = self.builder.store(value, old_val)
+            self.symtab[name] = new_val.operands[1]
+            return new_val
+
+        var_address = self.alloc_and_store(value, typ, name=name)
+
+        self.symtab[name] = var_address
+        self.typetab[name] = typ
+        return var_address
+
+    # noinspection SpellCheckingInspection
     def bitcast(self, value, type_):
         return self.builder.bitcast(value, type_)
 
@@ -192,8 +207,8 @@ class CodeGenerator:
     def visit_string(self, node):
         return self.insert_const_string(node.val)
 
-    # TODO: review this to codegen instead of returning an ASTNode
     # noinspection PyMethodMayBeStatic
+    # TODO: review this to codegen instead of returning an ASTNode
     def visit_var(self, node):
         return Var(node.val)
 
@@ -358,8 +373,7 @@ class CodeGenerator:
 
         pos = self.load(index)
 
-        val = self.call('vector_get', [vector, pos])
-        val = self.builder.ptrtoint(val, Integer.as_llvm())
+        val = self.visit_vector(vector, pos)
 
         self.assign(node.var.val, val, Integer.as_llvm())
 
@@ -399,20 +413,6 @@ class CodeGenerator:
         var_address = self.assign(name, value, typ)
         return var_address
 
-    def assign(self, name, value, typ):
-
-        old_val = self.symtab.get(name)
-        if old_val:
-            new_val = self.builder.store(value, old_val)
-            self.symtab[name] = new_val.operands[1]
-            return new_val
-
-        var_address = self.alloc_and_store(value, typ, name=name)
-
-        self.symtab[name] = var_address
-        self.typetab[name] = typ
-        return var_address
-
     def visit_list(self, node: List):
         vector = self.alloc(List.as_llvm())
         self.call('vector_init', [vector])
@@ -424,9 +424,13 @@ class CodeGenerator:
     def visit_indexof(self, node: IndexOf):
         index = self.visit(node.index)
         vector = self.visit(node.lst)
-        item = self.call('vector_get', [vector, index])
+        val = self.visit_vector(vector, index)
+        return val
 
-        return self.builder.ptrtoint(item, Integer.as_llvm())
+    def visit_vector(self, vector, index):
+        val = self.call('vector_get', [vector, index])
+        val = self.builder.ptrtoint(val, Integer.as_llvm())
+        return val
 
     def visit_binop(self, node):
 
