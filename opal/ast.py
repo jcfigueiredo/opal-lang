@@ -282,9 +282,18 @@ class IndexOf(ASTNode):
         self.index = index
 
 
+class Klass(ASTNode):
+    def dump(self):
+        return f'(class {self.name}{self.body.dump()})'
+
+    def __init__(self, name, body: Block):
+        self.name = name
+        self.body = body
+
+
 # noinspection PyMethodMayBeStatic
 class ASTVisitor(InlineTransformer):
-    def program(self, body):
+    def program(self, body: Block):
         program = Program(body)
         return program
 
@@ -351,6 +360,9 @@ class ASTVisitor(InlineTransformer):
 
     def for_(self, var, iterable, body):
         return For(var, iterable, body)
+
+    def class_(self, name, body):
+        return Klass(name.val, body)
 
     def comp(self, lhs, op, rhs):
         node = Comparison.by(op.value)

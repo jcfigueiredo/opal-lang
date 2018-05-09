@@ -5,48 +5,17 @@ from contextlib import contextmanager
 from llvmlite import binding as llvm
 from llvmlite import ir
 from llvmlite.ir import Function
-from llvmlite.llvmpy.core import Builder
+from llvmlite.llvmpy.core import Builder, Module
 from llvmlite.tests.test_binding import BaseTest
 
 from opal.ast import Integer
-
-
-class Class:
-    def __init__(self, module, name, elements):
-        self._module = module
-        self._name = name
-        self._elements = elements
-        self._typ = None
-        self.functions = {}
-
-    def _pointer(self):
-        return self._typ.as_pointer()
-
-    def create(self):
-        self._typ = self._module.context.get_identified_type(self._name)
-        self._typ.set_body(*self._elements)
-        return self._typ
-
-    def add_function(self, name, signature=None, ret=None):
-        if not signature:
-            signature = []
-        if not ret:
-            ret = ir.VoidType()
-
-        func_ty = ir.FunctionType(ret, [self._pointer()] + signature)
-        func = Function(self._module, func_ty, name)
-        self.functions[name] = func
-        return func
-
-    @property
-    def type(self):
-        return self._typ
+from opal.codegen import TypeBuilder
 
 
 class TestTypeParsing(BaseTest):
     @contextmanager
     def check_parsing(self):
-        mod = ir.Module()
+        mod = Module('irgen')
         # Yield to caller and provide the module for adding
         # new GV.
         yield mod
@@ -58,9 +27,9 @@ class TestTypeParsing(BaseTest):
         # Natural layout
         with self.check_parsing() as mod:
 
-            type_name = "Type::Integer"
+            type_name = "Integer"
 
-            integer = Class(mod, type_name, [Integer.as_llvm()])
+            integer = TypeBuilder(mod, type_name, [Integer.as_llvm()])
             integer.create()
             typ_pointer = integer.type.as_pointer()
 

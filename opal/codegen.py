@@ -1,3 +1,4 @@
+from copy import deepcopy
 from hashlib import sha3_256
 
 # noinspection PyPackageRequirements
@@ -8,7 +9,7 @@ from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
 from opal import operations as ops
 from opal.ast import Program, BinaryOp, Integer, Float, String, Print, Boolean, Assign, Var, VarValue, List, IndexOf, \
-    While, If, Continue, For, Value
+    While, If, Continue, For, Value, Klass
 from opal.types import Int8, Any
 
 PRIVATE_LINKAGE = 'private'
@@ -137,14 +138,15 @@ class CodeGenerator:
     def select(self, val, true, false):
         return self.builder.select(val, true, false)
 
-    def insert_const_string(self, string):
+    @staticmethod
+    def insert_const_string(module, string):
         text = Constant.stringz(string)
-        name = self.get_string_name(string)
+        name = CodeGenerator.get_string_name(string)
         # Try to reuse existing global
-        gv = self.module.globals.get(name)
+        gv = module.globals.get(name)
         if gv is None:
             # Not defined yet
-            gv = self.builder.module.add_global_variable(text.type, name=name)
+            gv = module.add_global_variable(text.type, name=name)
             gv.linkage = PRIVATE_LINKAGE
             gv.unnamed_addr = True
             gv.global_constant = True
@@ -205,7 +207,7 @@ class CodeGenerator:
         return getattr(self, method, self.generic_codegen)(node)
 
     def visit_string(self, node):
-        return self.insert_const_string(node.val)
+        return self.insert_const_string(self.module, node.val)
 
     # noinspection PyMethodMayBeStatic
     # TODO: review this to codegen instead of returning an ASTNode
@@ -216,6 +218,10 @@ class CodeGenerator:
     def visit_varvalue(self, node):
         name = self.symtab[node.val]
         return self.load(name)
+
+    def visit_klass(self, node: Klass):
+        t_builder = TypeBuilder(self.module, node.name, [])
+        t_builder.create()
 
     def visit_print(self, node: Print):
         val = self.visit(node.val)
@@ -264,9 +270,10 @@ class CodeGenerator:
             return
 
         if typ is Boolean:
-            true = self.insert_const_string('true')
+            mod = self.module
+            true = self.insert_const_string(mod, 'true')
             true = self.gep(true, [self.const(0), self.const(0)])
-            false = self.insert_const_string('false')
+            false = self.insert_const_string(mod, 'false')
             false = self.gep(false, [self.const(0), self.const(0)])
 
             if hasattr(val, 'constant'):
@@ -480,3 +487,55 @@ class CodeGenerator:
             return self.builder.fcmp_ordered('!=', result, self.const(0.0))
 
         raise NotImplementedError('Unsupported cast')
+
+
+class TypeBuilder:
+    def __init__(self, module, name, elements=None):
+        self._module = module
+        self._name = name
+        self._elements = elements
+        self._typ = None
+        self.functions = {}
+
+    def _pointer(self):
+        return self._typ.as_pointer()
+
+    def create(self):
+        name = self._name
+        elements = self._elements
+        vtable_typ = self._create_vtable(name, elements)
+        class_name = CodeGenerator.insert_const_string(self._module, name)
+
+        self._typ = self._module.context.get_identified_type(name)
+        self._typ.set_body(*elements)
+        return self._typ
+
+    def _create_vtable(self, name, elements):
+        vtable_name = f"vtable_{name}_type"
+        vtable_typ = self._module.context.get_identified_type(vtable_name)
+        vtable_elements = deepcopy(elements)
+        vtable_elements.insert(0, vtable_typ.as_pointer())
+        vtable_elements.insert(1, ir.IntType(8).as_pointer())
+        vtable_typ.set_body(*vtable_elements)
+        return vtable_typ
+
+    # def _create_identified_type(self, name, elements=None):
+    #     elements = elements or []
+    #     typ = self._module.context.get_identified_type(name)
+    #     typ.set_body(*elements)
+    #     return typ
+
+    def add_function(self, name, signature=None, ret=None):
+        if not signature:
+            signature = []
+        if not ret:
+            ret = ir.VoidType()
+
+        func_ty = ir.FunctionType(ret, [self._pointer()] + signature)
+        func = Function(self._module, func_ty, name)
+        self.functions[name] = func
+        return func
+
+    @property
+    def type(self):
+        return self._typ
