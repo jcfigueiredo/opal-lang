@@ -286,9 +286,10 @@ class Klass(ASTNode):
     def dump(self):
         return f'(class {self.name}{self.body.dump()})'
 
-    def __init__(self, name, body: Block):
+    def __init__(self, name, body: Block, parent=None):
         self.name = name
         self.body = body
+        self.parent = parent
 
 
 # noinspection PyMethodMayBeStatic
@@ -363,6 +364,9 @@ class ASTVisitor(InlineTransformer):
 
     def class_(self, name, body):
         return Klass(name.val, body)
+
+    def inherits(self, name, parent, body):
+        return Klass(name.val, body, parent=parent.val)
 
     def comp(self, lhs, op, rhs):
         node = Comparison.by(op.value)

@@ -15,15 +15,15 @@ class TestTypeCreationSyntax:
         repres.should.contain('program block class_ name Object block')
 
 
-# class TestTypeInheritanceSyntax:
-#     def test_is_supported_with_variables(self):
-#         expr = """
-#         class Integer < Object
-#         end
-#         """
-#
-#         repres = get_representation(expr)
-#         repres.should.contain('program block class_ name Integer < name Object block')
+class TestTypeInheritanceSyntax:
+    def test_is_supported_with_variables(self):
+        expr = """
+        class Integer < Object
+        end
+        """
+
+        repres = get_representation(expr)
+        repres.should.contain('program block inherits name Integer name Object block')
 
 
 class TestTypeCreationAST:
@@ -34,6 +34,16 @@ class TestTypeCreationAST:
         """
         prog = parse(expr)
         prog.dump().should.contain(f'(class Object(Block\n  ))')
+
+
+class TestTypeCreationWithInheritanceAST:
+    def test_has_a_representation(self):
+        expr = """
+        class Integer < Object 
+        end
+        """
+        prog = parse(expr)
+        prog.dump().should.contain(f'(class Integer(Block\n  ))')
 
 
 class TestCreatingANewType:
