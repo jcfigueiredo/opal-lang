@@ -142,10 +142,8 @@ class CodeGenerator:
     def insert_const_string(module, string):
         text = Constant.stringz(string)
         name = CodeGenerator.get_string_name(string)
-        # Try to reuse existing global
         gv = module.globals.get(name)
         if gv is None:
-            # Not defined yet
             gv = module.add_global_variable(text.type, name=name)
             gv.linkage = PRIVATE_LINKAGE
             gv.unnamed_addr = True
@@ -490,12 +488,12 @@ class CodeGenerator:
 
 
 class TypeBuilder:
-    def __init__(self, module, name, elements=None):
+    def __init__(self, module: Module, name: str, elements: list=None):
         self._module = module
         self._name = name
         self._elements = elements
         self._typ = None
-        self.functions = {}
+        self._functions = {}
 
     def _pointer(self):
         return self._typ.as_pointer()
@@ -503,27 +501,38 @@ class TypeBuilder:
     def create(self):
         name = self._name
         elements = self._elements
-        vtable_typ = self._create_vtable(name, elements)
-        class_name = CodeGenerator.insert_const_string(self._module, name)
+        vtable_typ = self._create_vtable_type(name, elements)
+        class_string = CodeGenerator.insert_const_string(self._module, name)
+
+        self._create_vtable(name, class_string, vtable_typ, elements)
 
         self._typ = self._module.context.get_identified_type(name)
         self._typ.set_body(*elements)
         return self._typ
 
-    def _create_vtable(self, name, elements):
-        vtable_name = f"vtable_{name}_type"
+    def _create_vtable(self, name, class_string, vtable_typ, elements=None):
+        fields = [
+            ir.Constant(vtable_typ.as_pointer(), None),
+            class_string.gep([ir.Constant(Integer.as_llvm(), 0), ir.Constant(Integer.as_llvm(), 0)])
+        ]
+        fields += [item.null for item in elements] or []
+
+        vtable = self._module.add_global_variable(vtable_typ, name=f'{name}_vtable')
+        vtable.linkage = PRIVATE_LINKAGE
+        vtable.unnamed_addr = False
+        vtable.global_constant = True
+        vtable.initializer = vtable_typ(
+            fields
+        )
+
+    def _create_vtable_type(self, name, elements):
+        vtable_name = f"{name}_vtable_type"
         vtable_typ = self._module.context.get_identified_type(vtable_name)
         vtable_elements = deepcopy(elements)
         vtable_elements.insert(0, vtable_typ.as_pointer())
         vtable_elements.insert(1, ir.IntType(8).as_pointer())
         vtable_typ.set_body(*vtable_elements)
         return vtable_typ
-
-    # def _create_identified_type(self, name, elements=None):
-    #     elements = elements or []
-    #     typ = self._module.context.get_identified_type(name)
-    #     typ.set_body(*elements)
-    #     return typ
 
     def add_function(self, name, signature=None, ret=None):
         if not signature:
@@ -533,7 +542,7 @@ class TypeBuilder:
 
         func_ty = ir.FunctionType(ret, [self._pointer()] + signature)
         func = Function(self._module, func_ty, name)
-        self.functions[name] = func
+        self._functions[name] = func
         return func
 
     @property
