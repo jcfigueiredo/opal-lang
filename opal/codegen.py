@@ -505,7 +505,7 @@ class TypeBuilder:
         class_string = CodeGenerator.insert_const_string(self._module, name)
 
         self._create_vtable(name, class_string, vtable_typ, elements)
-
+        elements.insert(0, vtable_typ.as_pointer())
         self._typ = self._module.context.get_identified_type(name)
         self._typ.set_body(*elements)
         return self._typ

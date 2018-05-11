@@ -58,7 +58,7 @@ class TestCreatingANewType:
         cls.code = str(evaluator.codegen)
 
     def test_has_the_right_struct(self):
-        self.code.should.contain('%"Object" = type {}')
+        self.code.should.contain('%"Object" = type {%"Object_vtable_type"*}')
 
     def test_creates_the_vtable_type(self):
         self.code.should.contain('%"Object_vtable_type" = type {%"Object_vtable_type"*, i8*}')
@@ -71,3 +71,4 @@ class TestCreatingANewType:
         self.code.should.contain(
             f'@"Object_vtable" = private constant %"Object_vtable_type" {{%"Object_vtable_type"* null, '
             f'i8* getelementptr ([7 x i8], [7 x i8]* @"{class_name}", i32 0, i32 0)}}')
+

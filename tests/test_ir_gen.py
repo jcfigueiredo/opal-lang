@@ -39,7 +39,7 @@ class TestTypeParsing(BaseTest):
             entry_block = func.append_basic_block('entry')
             args = func.args
             constant = ir.Constant(typ_pointer, args[0].get_reference())
-            indices = [ir.Constant(Integer.as_llvm(), 0), ir.Constant(Integer.as_llvm(), 0)]
+            indices = [ir.Constant(Integer.as_llvm(), 0), ir.Constant(Integer.as_llvm(), 1)]
 
             builder = Builder(entry_block)
             value = builder.gep(constant, indices)
