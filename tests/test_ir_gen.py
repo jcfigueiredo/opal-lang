@@ -2,11 +2,13 @@ from __future__ import print_function, absolute_import
 
 from contextlib import contextmanager
 
+import pytest
 from llvmlite import binding as llvm
 from llvmlite import ir
 from llvmlite.ir import Function
 from llvmlite.llvmpy.core import Builder, Module
 from llvmlite.tests.test_binding import BaseTest
+from pytest import skip
 
 from opal.ast import Integer
 from opal.codegen import TypeBuilder

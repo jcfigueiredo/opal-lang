@@ -11,6 +11,7 @@ from opal import operations as ops
 from opal.ast import Program, BinaryOp, Integer, Float, String, Print, Boolean, Assign, Var, VarValue, List, IndexOf, \
     While, If, Continue, For, Value, Klass
 from opal.types import Int8, Any
+from resources.llvmex import CodegenError
 
 PRIVATE_LINKAGE = 'private'
 
@@ -24,9 +25,10 @@ class CodeGenerator:
 
         self.loop_end_blocks = []
         self.loop_cond_blocks = []
-
-        self.module = Module(name='opal-lang')
+        context = ir.Context()
+        self.module = Module(name='opal-lang', context=context)
         self.blocks = []
+        self.scope = {}
 
         self._add_builtins()
 
@@ -218,8 +220,13 @@ class CodeGenerator:
         return self.load(name)
 
     def visit_klass(self, node: Klass):
-        t_builder = TypeBuilder(self.module, node.name, [])
-        t_builder.create()
+        parent = node.parent
+        if parent and parent not in self.scope:
+            raise CodegenError(f'Parent class {parent} not defined')
+        t_builder = TypeBuilder(self.module, node.name, [], parent)
+        klass_type = t_builder.create()
+        self.scope[node.name] = klass_type
+        return klass_type
 
     def visit_print(self, node: Print):
         val = self.visit(node.val)
@@ -488,10 +495,11 @@ class CodeGenerator:
 
 
 class TypeBuilder:
-    def __init__(self, module: Module, name: str, elements: list=None):
+    def __init__(self, module: Module, name: str, elements: list=None, parent=None):
         self._module = module
         self._name = name
         self._elements = elements
+        self.parent = parent
         self._typ = None
         self._functions = {}
 
@@ -501,20 +509,42 @@ class TypeBuilder:
     def create(self):
         name = self._name
         elements = self._elements
-        vtable_typ = self._create_vtable_type(name, elements)
-        class_string = CodeGenerator.insert_const_string(self._module, name)
+        vtable_typ = self._create_vtable_type(elements)
 
-        self._create_vtable(name, class_string, vtable_typ, elements)
-        elements.insert(0, vtable_typ.as_pointer())
+        self._create_vtable(vtable_typ, elements)
         self._typ = self._module.context.get_identified_type(name)
+
+        elements.insert(0, vtable_typ.as_pointer())
         self._typ.set_body(*elements)
         return self._typ
 
-    def _create_vtable(self, name, class_string, vtable_typ, elements=None):
+    def _create_vtable_type(self, elements):
+        name = self._name
+        vtable_name = f"{name}_vtable_type"
+        vtable_typ = self._module.context.get_identified_type(vtable_name)
+        if not vtable_typ.is_opaque:
+            return vtable_typ
+        vtable_elements = deepcopy(elements)
+        parent_type = self.parent and self._module.context.get_identified_type(f"{self.parent}_vtable_type") or vtable_typ
+        vtable_elements.insert(0, parent_type.as_pointer())
+        vtable_elements.insert(1, ir.IntType(8).as_pointer())
+        vtable_typ.set_body(*vtable_elements)
+        return vtable_typ
+
+    def _create_vtable(self, vtable_typ, elements=None):
+        name = self._name
+        class_string = CodeGenerator.insert_const_string(self._module, name)
+        if self.parent:
+            parent_table_typ = self._module.context.get_identified_type(f"{self.parent}_vtable_type")
+            vtable_constant = ir.Constant(parent_table_typ.as_pointer(), self._module.get_global(f'{self.parent}_vtable').get_reference())
+        else:
+            vtable_constant = ir.Constant(vtable_typ.as_pointer(), None)
+
         fields = [
-            ir.Constant(vtable_typ.as_pointer(), None),
+            vtable_constant,
             class_string.gep([ir.Constant(Integer.as_llvm(), 0), ir.Constant(Integer.as_llvm(), 0)])
         ]
+
         fields += [item.null for item in elements] or []
 
         vtable = self._module.add_global_variable(vtable_typ, name=f'{name}_vtable')
@@ -524,15 +554,6 @@ class TypeBuilder:
         vtable.initializer = vtable_typ(
             fields
         )
-
-    def _create_vtable_type(self, name, elements):
-        vtable_name = f"{name}_vtable_type"
-        vtable_typ = self._module.context.get_identified_type(vtable_name)
-        vtable_elements = deepcopy(elements)
-        vtable_elements.insert(0, vtable_typ.as_pointer())
-        vtable_elements.insert(1, ir.IntType(8).as_pointer())
-        vtable_typ.set_body(*vtable_elements)
-        return vtable_typ
 
     def add_function(self, name, signature=None, ret=None):
         if not signature:
