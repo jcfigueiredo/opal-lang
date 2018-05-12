@@ -29,6 +29,8 @@ class TestTypeParsing(BaseTest):
         # Natural layout
         with self.check_parsing() as mod:
 
+            TypeBuilder(mod, 'Object').create()
+
             type_name = "Integer"
 
             integer = TypeBuilder(mod, type_name, [Integer.as_llvm()])

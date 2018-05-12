@@ -56,8 +56,7 @@ class TestCreatingANewType:
         class Object
         end
         """
-        global global_context
-        global_context = Context()
+
         evaluator = OpalEvaluator()
         evaluator.evaluate(expr, run=False)
         cls.code = str(evaluator.codegen)
@@ -117,6 +116,38 @@ class TestCreatingANewTypeWithInheritance:
 
     # noinspection SpellCheckingInspection
     def test_creates_the_vtable_pointing_to_parent(self):
+        cname = self.class_name
+        pcname = self.parent_class_name
+        class_name_ptr = CodeGenerator.get_string_name(cname)
+        self.code.should.contain(
+            f'@"{cname}_vtable" = private constant %"{cname}_vtable_type" '
+            f'{{%"{pcname}_vtable_type"* @"{pcname}_vtable", '
+            f'i8* getelementptr ([8 x i8], [8 x i8]* @"{class_name_ptr}", i32 0, i32 0)}}')
+
+
+class TestTypesWithExplicitInheritance:
+    class_name = 'Integer'
+    parent_class_name = 'Object'
+
+    @classmethod
+    def setup_class(cls):
+        expr = f"""
+        class {cls.parent_class_name}
+        end
+        
+        class {cls.class_name}
+        end
+        
+        """
+        evaluator = OpalEvaluator()
+        evaluator.evaluate(expr, run=False)
+        cls.code = str(evaluator.codegen)
+
+    def test_inherits_from_object_automatically(self):
+        self.code.should.contain('%"Integer_vtable_type" = type {%"Object_vtable_type"*, i8*}')
+
+    # noinspection SpellCheckingInspection
+    def test_creates_the_vtable_pointing_to_object_vtable_automatically(self):
         cname = self.class_name
         pcname = self.parent_class_name
         class_name_ptr = CodeGenerator.get_string_name(cname)

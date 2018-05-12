@@ -43,10 +43,6 @@ class CodeGenerator:
         self.exit_blocks = [exit_block]
         self.block_stack = [entry_block]
 
-        llvm.initialize()
-        llvm.initialize_native_target()
-        llvm.initialize_native_asmprinter()
-
     def __str__(self):
         return str(self.module)
 
@@ -495,10 +491,12 @@ class CodeGenerator:
 
 
 class TypeBuilder:
-    def __init__(self, module: Module, name: str, elements: list=None, parent=None):
+    def __init__(self, module: Module, name: str, elements: list = None, parent=None):
         self._module = module
         self._name = name
-        self._elements = elements
+        self._elements = elements or []
+        if name != 'Object' and parent is None:
+            parent = 'Object'
         self.parent = parent
         self._typ = None
         self._functions = {}
@@ -525,7 +523,8 @@ class TypeBuilder:
         if not vtable_typ.is_opaque:
             return vtable_typ
         vtable_elements = deepcopy(elements)
-        parent_type = self.parent and self._module.context.get_identified_type(f"{self.parent}_vtable_type") or vtable_typ
+        parent_type = self.parent and self._module.context.get_identified_type(f"{self.parent}_vtable_type") \
+                      or vtable_typ
         vtable_elements.insert(0, parent_type.as_pointer())
         vtable_elements.insert(1, ir.IntType(8).as_pointer())
         vtable_typ.set_body(*vtable_elements)
@@ -536,7 +535,8 @@ class TypeBuilder:
         class_string = CodeGenerator.insert_const_string(self._module, name)
         if self.parent:
             parent_table_typ = self._module.context.get_identified_type(f"{self.parent}_vtable_type")
-            vtable_constant = ir.Constant(parent_table_typ.as_pointer(), self._module.get_global(f'{self.parent}_vtable').get_reference())
+            vtable_constant = ir.Constant(parent_table_typ.as_pointer(),
+                                          self._module.get_global(f'{self.parent}_vtable').get_reference())
         else:
             vtable_constant = ir.Constant(vtable_typ.as_pointer(), None)
 

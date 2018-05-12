@@ -19,6 +19,10 @@ class OpalEvaluator:
 
     def __init__(self):
         self.codegen = CodeGenerator()
+        llvm.initialize()
+        llvm.initialize_native_target()
+        llvm.initialize_native_asmprinter()
+
         self.llvm_mod = None
 
     def _get_external_modules(self):
