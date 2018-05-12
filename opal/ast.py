@@ -376,7 +376,10 @@ class ASTVisitor(InlineTransformer):
     def class_(self, name, body):
         return Klass(name.val, body)
 
-    def def_(self, name, params, body):
+    def def_(self, name, params, body=None):
+        if isinstance(params, Block):
+            body = params
+            return Funktion(name.val, [], body)
         return Funktion(name.val, params, body)
 
     def params(self, *node):

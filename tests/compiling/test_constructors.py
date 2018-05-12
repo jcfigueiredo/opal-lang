@@ -55,3 +55,14 @@ class TestTypeConstructorAST:
         """
         prog = parse(expr)
         prog.dump().should.contain(f'(class Integer(Block\n  (init(val,other) (Block\n  (Boolean true)))))')
+
+    def test_has_a_representation_for_no_args(self):
+        expr = """
+        class Integer
+            def init()
+                true
+            end
+        end
+        """
+        prog = parse(expr)
+        prog.dump().should.contain(f'(class Integer(Block\n  (init() (Block\n  (Boolean true)))))')
