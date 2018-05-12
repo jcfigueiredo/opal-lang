@@ -292,6 +292,17 @@ class Klass(ASTNode):
         self.parent = parent
 
 
+class Funktion(ASTNode):
+    def dump(self):
+        args = ','.join(self.args)
+        return f'({self.name}({args}) {self.body.dump()})'
+
+    def __init__(self, name, args, body):
+        self.name = name
+        self.args = args
+        self.body = body
+
+
 # noinspection PyMethodMayBeStatic
 class ASTVisitor(InlineTransformer):
     def program(self, body: Block):
@@ -364,6 +375,12 @@ class ASTVisitor(InlineTransformer):
 
     def class_(self, name, body):
         return Klass(name.val, body)
+
+    def def_(self, name, params, body):
+        return Funktion(name.val, params, body)
+
+    def params(self, *node):
+        return [n.val for n in node]
 
     def inherits(self, name, parent, body):
         return Klass(name.val, body, parent=parent.val)

@@ -1,6 +1,3 @@
-# noinspection PyMethodMayBeStatic
-from llvmlite.ir.context import Context
-
 from opal.codegen import CodeGenerator
 from opal.evaluator import OpalEvaluator
 from resources.llvmex import CodegenError
