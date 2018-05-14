@@ -1,15 +1,14 @@
-from copy import deepcopy
+from copy import deepcopy, copy
 from hashlib import sha3_256
 
 # noinspection PyPackageRequirements
-from llvmlite import binding as llvm
 from llvmlite import ir as ir
 from llvmlite.ir import PointerType
 from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
 from opal import operations as ops
 from opal.ast import Program, BinaryOp, Integer, Float, String, Print, Boolean, Assign, Var, VarValue, List, IndexOf, \
-    While, If, Continue, For, Value, Klass
+    While, If, Continue, For, Value, Klass, Funktion
 from opal.types import Int8, Any
 from resources.llvmex import CodegenError
 
@@ -22,6 +21,7 @@ class CodeGenerator:
         self.symtab = {}
         self.typetab = {}
         self.is_break = False
+        self.current_class = None
 
         self.loop_end_blocks = []
         self.loop_cond_blocks = []
@@ -34,10 +34,11 @@ class CodeGenerator:
 
         func_ty = ir.FunctionType(ir.VoidType(), [])
         func = Function(self.module, func_ty, 'main')
-        entry_block = func.append_basic_block('entry')
-        exit_block = func.append_basic_block('exit')
 
         self.current_function = func
+        entry_block = self.add_block('entry')
+        exit_block = self.add_block('exit')
+
         self.function_stack = [func]
         self.builder = Builder(entry_block)
         self.exit_blocks = [exit_block]
@@ -217,12 +218,50 @@ class CodeGenerator:
 
     def visit_klass(self, node: Klass):
         parent = node.parent
-        if parent and parent not in self.scope:
+        if parent and parent not in self.typetab:
             raise CodegenError(f'Parent class {parent} not defined')
-        t_builder = TypeBuilder(self.module, node.name, [], parent)
+        class_name = node.name
+
+        self.current_class = class_name
+        self.typetab[class_name] = ClassPrototype(class_name, parent, self.module)
+
+        self.visit(node.body)
+
+        t_builder = TypeBuilder(self.typetab[class_name])
         klass_type = t_builder.create()
-        self.scope[node.name] = klass_type
+
+        self.current_class = None
         return klass_type
+
+    def visit_funktion(self, node: Funktion):
+        klass = self.typetab[self.current_class]
+        signature = node.args
+        ret = ir.VoidType()
+
+        func_ty = ir.FunctionType(ret, [klass.type.as_pointer()] + signature)
+        method_name = f'{klass.name}::{node.name}'
+        func = Function(self.module, func_ty, method_name)
+
+        self.function_stack.append(func)
+
+        old_func = self.current_function
+        old_builder = self.builder
+        self.current_function = func
+        entry_block = self.add_block('entry')
+        exit_block = self.add_block('exit')
+        self.builder = Builder(entry_block)
+
+        self.visit(node.body)
+
+        self.branch(exit_block)
+        self.position_at_end(exit_block)
+        self.builder.ret_void()
+
+        self.current_function = old_func
+        self.builder = old_builder
+        self.function_stack.pop()
+        self.typetab[self.current_class].add_method(func)
+        return func
 
     def visit_print(self, node: Print):
         val = self.visit(node.val)
@@ -490,12 +529,44 @@ class CodeGenerator:
         raise NotImplementedError('Unsupported cast')
 
 
-class TypeBuilder:
-    def __init__(self, module: Module, name: str, elements: list = None, parent=None):
+class ClassPrototype:
+    def __init__(self, name, parent, module):
+        self.name = name
+        self.parent = parent
+        self._methods = []
         self._module = module
-        self._name = name
-        self._elements = elements or []
-        if name != 'Object' and parent is None:
+        vtable_typ_name = f"{name}_vtable_type"
+        self.vtable_typ = self._module.context.get_identified_type(vtable_typ_name)
+        vtable_name = f"{name}_vtable"
+        self.vtable = self._module.context.get_identified_type(vtable_name)
+        self.type = self._module.context.get_identified_type(name)
+
+    @property
+    def module(self):
+        return self._module
+
+    @property
+    def methods(self):
+        return self._methods
+
+    def add_method(self, method):
+        self._methods.append(method)
+
+
+class FunctionPrototype:
+    def __init__(self, name):
+        self.name = name
+        self._args = []
+
+
+class TypeBuilder:
+    # def __init__(self, module: Module, name: str, elements: list = None, parent=None):
+    def __init__(self, class_proto: ClassPrototype):
+        self._module = class_proto.module
+        self._name = class_proto.name
+        self._elements = class_proto.methods or []
+        parent = class_proto.parent
+        if self._name != 'Object' and parent is None:
             parent = 'Object'
         self.parent = parent
         self._typ = None
@@ -512,17 +583,19 @@ class TypeBuilder:
         self._create_vtable(vtable_typ, elements)
         self._typ = self._module.context.get_identified_type(name)
 
+        # elements = [el.type for el in elements]
+        elements = []
         elements.insert(0, vtable_typ.as_pointer())
         self._typ.set_body(*elements)
         return self._typ
 
     def _create_vtable_type(self, elements):
         name = self._name
-        vtable_name = f"{name}_vtable_type"
-        vtable_typ = self._module.context.get_identified_type(vtable_name)
+        vtable_typ_name = f"{name}_vtable_type"
+        vtable_typ = self._module.context.get_identified_type(vtable_typ_name)
         if not vtable_typ.is_opaque:
             return vtable_typ
-        vtable_elements = deepcopy(elements)
+        vtable_elements = [el.type for el in elements]
         parent_type = self.parent and self._module.context.get_identified_type(f"{self.parent}_vtable_type") \
                       or vtable_typ
         vtable_elements.insert(0, parent_type.as_pointer())
@@ -531,6 +604,7 @@ class TypeBuilder:
         return vtable_typ
 
     def _create_vtable(self, vtable_typ, elements=None):
+        elements = elements or []
         name = self._name
         class_string = CodeGenerator.insert_const_string(self._module, name)
         if self.parent:
@@ -545,7 +619,7 @@ class TypeBuilder:
             class_string.gep([ir.Constant(Integer.as_llvm(), 0), ir.Constant(Integer.as_llvm(), 0)])
         ]
 
-        fields += [item.null for item in elements] or []
+        fields += [ir.Constant(item.type, item.get_reference()) for item in elements]
 
         vtable = self._module.add_global_variable(vtable_typ, name=f'{name}_vtable')
         vtable.linkage = PRIVATE_LINKAGE
