@@ -138,20 +138,20 @@ class TestTypeConstructorExecution:
         code = str(evaluator.codegen)
 
         code.should.contain('define void @"Integer::init"(%"Integer"* %".1", %"Object" %".2", %"Object" %".3")')
-    #
-    # def test_accepts_typed_parameters(self, evaluator):
-    #     expr = f"""
-    #     class Object
-    #     end
-    #
-    #     class Integer
-    #         def init(val::Cint32)
-    #         end
-    #     end
-    #
-    #     """
-    #
-    #     evaluator.evaluate(expr, run=True, print_ir=True)
-    #     code = str(evaluator.codegen)
-    #
-    #     code.should.contain('define void @"Integer::init"(%"Integer"* %".1", i32 %".2")')
+
+    def test_accepts_typed_parameters(self, evaluator):
+        expr = f"""
+        class Object
+        end
+
+        class Integer
+            def init(val::Cint32)
+            end
+        end
+
+        """
+
+        evaluator.evaluate(expr, run=True)
+        code = str(evaluator.codegen)
+
+        code.should.contain('define void @"Integer::init"(%"Integer"* %".1", i32 %".2")')

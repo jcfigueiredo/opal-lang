@@ -7,7 +7,7 @@ from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
 from opal import operations as ops
 from opal.ast import Program, BinaryOp, Integer, Float, String, Print, Boolean, Assign, Var, VarValue, List, IndexOf, \
-    While, If, Continue, For, Value, Klass, Funktion
+    While, If, Continue, For, Value, Klass, Funktion, CType
 from opal.types import Int8, Any
 from resources.llvmex import CodegenError
 
@@ -237,7 +237,17 @@ class CodeGenerator:
 
         object_type = self.module.get_identified_types()['Object']
 
-        signature = [object_type for _ in node.params]
+        type_map = {
+            'Cint32': Integer.as_llvm()
+        }
+
+        def get_param_type(param):
+            if param.type in type_map:
+                return type_map[param.type]
+
+            return object_type
+
+        signature = [get_param_type(param) for param in node.params]
         ret = ir.VoidType()
 
         func_ty = ir.FunctionType(ret, [klass.type.as_pointer()] + signature)
