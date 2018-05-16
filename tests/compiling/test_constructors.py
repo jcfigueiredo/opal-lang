@@ -1,8 +1,3 @@
-from wurlitzer import pipes
-
-from opal.codegen import CodeGenerator
-from opal.evaluator import OpalEvaluator
-from resources.llvmex import CodegenError
 from tests.helpers import get_representation, parse
 
 
@@ -18,7 +13,7 @@ class TestTypeConstructorSyntax:
 
         repres = get_representation(expr)
         repres.should.contain('class_ name Integer')
-        repres.should.contain('def_ name init params name val block')
+        repres.should.contain('def_ name init params param name val block')
 
     def test_has_a_body(self):
         expr = """
@@ -32,7 +27,35 @@ class TestTypeConstructorSyntax:
 
         repres = get_representation(expr)
         repres.should.contain('class_ name Integer')
-        repres.should.contain('def_ name init params name val block boolean true')
+        repres.should.contain('def_ name init params param name val block boolean true')
+
+    def test_supports_c_types(self):
+        expr = """
+        class Integer
+            def init(val::Cint32)
+                true
+            end
+        end
+        
+        """
+
+        repres = get_representation(expr)
+        repres.should.contain('class_ name Integer')
+        repres.should.contain('def_ name init params param name val ctype Cint32 block boolean true')
+
+    def test_supports_types(self):
+        expr = """
+        class Integer
+            def init(val::Integer)
+                true
+            end
+        end
+        
+        """
+
+        repres = get_representation(expr)
+        repres.should.contain('class_ name Integer')
+        repres.should.contain('def_ name init params param name val Integer block boolean true')
 
 
 class TestTypeConstructorAST:
@@ -69,6 +92,17 @@ class TestTypeConstructorAST:
         prog = parse(expr)
         prog.dump().should.contain('(class Integer(Block\n  (init() (Block\n  (Boolean true)))))')
 
+    def test_has_a_representation_for_nc_typed_args(self):
+        expr = """
+        class Integer
+            def init(val::Cint32)
+                true
+            end
+        end
+        """
+        prog = parse(expr)
+        prog.dump().should.contain('(class Integer(Block\n  (init(val::Cint32) (Block\n  (Boolean true)))))')
+
 
 class TestTypeConstructorExecution:
     def test_generates_a_function(self, evaluator):
@@ -87,3 +121,37 @@ class TestTypeConstructorExecution:
         code = str(evaluator.codegen)
 
         code.should.contain('define void @"Integer::init"(%"Integer"* %".1")')
+
+    def test_accepts_parameters(self, evaluator):
+        expr = f"""
+        class Object
+        end
+
+        class Integer
+            def init(a, b)
+            end
+        end
+        
+        """
+
+        evaluator.evaluate(expr, run=True)
+        code = str(evaluator.codegen)
+
+        code.should.contain('define void @"Integer::init"(%"Integer"* %".1", %"Object" %".2", %"Object" %".3")')
+    #
+    # def test_accepts_typed_parameters(self, evaluator):
+    #     expr = f"""
+    #     class Object
+    #     end
+    #
+    #     class Integer
+    #         def init(val::Cint32)
+    #         end
+    #     end
+    #
+    #     """
+    #
+    #     evaluator.evaluate(expr, run=True, print_ir=True)
+    #     code = str(evaluator.codegen)
+    #
+    #     code.should.contain('define void @"Integer::init"(%"Integer"* %".1", i32 %".2")')

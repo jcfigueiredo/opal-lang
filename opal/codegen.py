@@ -1,4 +1,3 @@
-from copy import deepcopy, copy
 from hashlib import sha3_256
 
 # noinspection PyPackageRequirements
@@ -235,7 +234,10 @@ class CodeGenerator:
 
     def visit_funktion(self, node: Funktion):
         klass = self.typetab[self.current_class]
-        signature = node.args
+
+        object_type = self.module.get_identified_types()['Object']
+
+        signature = [object_type for _ in node.params]
         ret = ir.VoidType()
 
         func_ty = ir.FunctionType(ret, [klass.type.as_pointer()] + signature)
@@ -596,8 +598,8 @@ class TypeBuilder:
         if not vtable_typ.is_opaque:
             return vtable_typ
         vtable_elements = [el.type for el in elements]
-        parent_type = self.parent and self._module.context.get_identified_type(f"{self.parent}_vtable_type") \
-                      or vtable_typ
+        parent_type = \
+            self.parent and self._module.context.get_identified_type(f"{self.parent}_vtable_type") or vtable_typ
         vtable_elements.insert(0, parent_type.as_pointer())
         vtable_elements.insert(1, ir.IntType(8).as_pointer())
         vtable_typ.set_body(*vtable_elements)

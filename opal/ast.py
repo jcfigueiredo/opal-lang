@@ -292,15 +292,41 @@ class Klass(ASTNode):
         self.parent = parent
 
 
+class CType(ASTNode):
+    def dump(self):
+        return f'::{self.val}'
+
+    def __init__(self, name):
+        self.val = name
+
+
 class Funktion(ASTNode):
     def dump(self):
-        args = ','.join(self.args)
+        args = ','.join([arg.dump() for arg in self.params])
         return f'({self.name}({args}) {self.body.dump()})'
 
-    def __init__(self, name, args, body):
+    def __init__(self, name, params, body):
         self.name = name
-        self.args = args
+        self.params = params
         self.body = body
+
+
+class Param(ASTNode):
+    def dump(self):
+        type_ = self.type and f'::{self.type}' or ''
+        return f'{self.name}{type_}'
+
+    def __init__(self, name, type_):
+        self._name = name
+        self._type = type_
+
+    @property
+    def name(self):
+        return self._name.val
+
+    @property
+    def type(self):
+        return self._type and self._type.val
 
 
 # noinspection PyMethodMayBeStatic
@@ -376,14 +402,20 @@ class ASTVisitor(InlineTransformer):
     def class_(self, name, body):
         return Klass(name.val, body)
 
+    def ctype(self, name):
+        return CType(name.value)
+
     def def_(self, name, params, body=None):
         if isinstance(params, Block):
             body = params
             return Funktion(name.val, [], body)
         return Funktion(name.val, params, body)
 
-    def params(self, *node):
-        return [n.val for n in node]
+    def params(self, *nodes):
+        return [node for node in nodes if isinstance(node, Param)]
+
+    def param(self, name, type_=None):
+        return Param(name, type_)
 
     def inherits(self, name, parent, body):
         return Klass(name.val, body, parent=parent.val)
