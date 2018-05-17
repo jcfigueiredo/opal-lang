@@ -283,34 +283,36 @@ class IndexOf(ASTNode):
 
 
 class Klass(ASTNode):
-    def dump(self):
-        return f'(class {self.name}{self.body.dump()})'
-
     def __init__(self, name, body: Block, parent=None):
         self.name = name
         self.body = body
         self.parent = parent
 
+    def dump(self):
+        return f'(class {self.name}{self.body.dump()})'
+
 
 class Funktion(ASTNode):
-    def dump(self):
-        args = ','.join([arg.dump() for arg in self.params])
-        return f'({self.name}({args}) {self.body.dump()})'
-
-    def __init__(self, name, params, body):
+    def __init__(self, name, params, body, ret_type=None):
         self.name = name
         self.params = params
         self.body = body
+        self.ret_type = ret_type
+
+    def dump(self):
+        args = ','.join([arg.dump() for arg in self.params])
+        ret_type = self.ret_type and f'{self.ret_type} ' or ''
+        return f'({ret_type}{self.name}({args}) {self.body.dump()})'
 
 
 class Param(ASTNode):
-    def dump(self):
-        type_ = self.type and f'::{self.type}' or ''
-        return f'{self.name}{type_}'
-
     def __init__(self, name, type_):
         self._name = name
         self._type = type_
+
+    def dump(self):
+        type_ = self.type and f'::{self.type}' or ''
+        return f'{self.name}{type_}'
 
     @property
     def name(self):
@@ -399,6 +401,12 @@ class ASTVisitor(InlineTransformer):
             body = params
             return Funktion(name.val, [], body)
         return Funktion(name.val, params, body)
+
+    def typed_def(self, type_, name, params, body=None):
+        if isinstance(params, Block):
+            body = params
+            return Funktion(name.val, [], body, type_.value)
+        return Funktion(name.val, params, body, type_.value)
 
     def params(self, *nodes):
         return [node for node in nodes if isinstance(node, Param)]

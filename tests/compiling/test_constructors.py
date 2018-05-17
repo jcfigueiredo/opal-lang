@@ -55,7 +55,7 @@ class TestTypeMethodSyntax:
 
         repres = get_representation(expr)
         repres.should.contain('class_ name Integer')
-        repres.should.contain('def_ Cint32 name do_it params param name val Cint32 block boolean true')
+        repres.should.contain('typed_def Cint32 name do_it params param name val Cint32 block boolean true')
 
 
 class TestTypeMethodAST:
@@ -92,7 +92,7 @@ class TestTypeMethodAST:
         prog = parse(expr)
         prog.dump().should.contain('(class Integer(Block\n  (do_it() (Block\n  (Boolean true)))))')
 
-    def test_has_a_representation_for_nc_typed_args(self):
+    def test_has_a_representation_for_typed_args(self):
         expr = """
         class Integer
             def do_it(val::Cint32)
@@ -102,6 +102,17 @@ class TestTypeMethodAST:
         """
         prog = parse(expr)
         prog.dump().should.contain('(class Integer(Block\n  (do_it(val::Cint32) (Block\n  (Boolean true)))))')
+
+    def test_has_a_representation_for_returning_type(self):
+        expr = """
+        class Integer
+            def Cint32 do_it(val::Cint32)
+                true
+            end
+        end
+        """
+        prog = parse(expr)
+        prog.dump().should.contain('(class Integer(Block\n  (Cint32 do_it(val::Cint32) (Block\n  (Boolean true)))))')
 
 
 class TestTypeMethodExecution:
