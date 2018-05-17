@@ -323,6 +323,14 @@ class Param(ASTNode):
         return self._type
 
 
+class Return(ASTNode):
+    def __init__(self, val):
+        self.val = val
+
+    def dump(self):
+        return f'(Return {self.val.dump()})'
+
+
 # noinspection PyMethodMayBeStatic
 class ASTVisitor(InlineTransformer):
     def program(self, body: Block):
@@ -413,6 +421,9 @@ class ASTVisitor(InlineTransformer):
 
     def param(self, name, type_=None):
         return Param(name, type_ and type_.value)
+
+    def ret_(self, val):
+        return Return(val)
 
     def inherits(self, name, parent, body):
         return Klass(name.val, body, parent=parent.val)

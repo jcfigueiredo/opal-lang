@@ -7,7 +7,7 @@ from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
 from opal import operations as ops
 from opal.ast import Program, BinaryOp, Integer, Float, String, Print, Boolean, Assign, Var, VarValue, List, IndexOf, \
-    While, If, Continue, For, Value, Klass, Funktion
+    While, If, Continue, For, Value, Klass, Funktion, Return
 from opal.types import Int8, Any
 from resources.llvmex import CodegenError
 
@@ -241,14 +241,17 @@ class CodeGenerator:
             'Cint32': Integer.as_llvm()
         }
 
-        def get_param_type(param):
-            if param.type in type_map:
-                return type_map[param.type]
+        def get_param_type(type_):
+            if type_ in type_map:
+                return type_map[type_]
 
             return object_type
 
-        signature = [get_param_type(param) for param in node.params]
-        ret = ir.VoidType()
+        signature = [get_param_type(param.type) for param in node.params]
+        if node.ret_type:
+            ret = get_param_type(node.ret_type)
+        else:
+            ret = ir.VoidType()
 
         func_ty = ir.FunctionType(ret, [klass.type.as_pointer()] + signature)
         method_name = f'{klass.name}::{node.name}'
@@ -261,19 +264,28 @@ class CodeGenerator:
         self.current_function = func
         entry_block = self.add_block('entry')
         exit_block = self.add_block('exit')
+        self.exit_blocks.append(exit_block)
         self.builder = Builder(entry_block)
 
-        self.visit(node.body)
-
+        ret = self.visit(node.body)
         self.branch(exit_block)
-        self.position_at_end(exit_block)
-        self.builder.ret_void()
+        if not ret:
+            self.position_at_end(exit_block)
+            self.builder.ret_void()
 
         self.current_function = old_func
         self.builder = old_builder
+        self.exit_blocks.pop()
         self.function_stack.pop()
         self.typetab[self.current_class].add_method(func)
         return func
+
+    def visit_return(self, node: Return):
+        previous_block = self.builder.block
+        self.position_at_end(self.exit_blocks[-1])
+        ret = self.builder.ret(self.visit(node.val))
+        self.position_at_end(previous_block)
+        return ret
 
     def visit_print(self, node: Print):
         val = self.visit(node.val)
