@@ -331,6 +331,23 @@ class Return(ASTNode):
         return f'(Return {self.val.dump()})'
 
 
+class Call(ASTNode):
+
+    def __init__(self, func, args):
+        self.func = func
+
+        if args is None:
+            args = []
+        elif not isinstance(args, Iterable):
+            args = [args]
+
+        self.args = args
+
+    def dump(self):
+        args = ', '.join([arg.dump() for arg in self.args])
+        return f'{self.func}({args})'
+
+
 # noinspection PyMethodMayBeStatic
 class ASTVisitor(InlineTransformer):
     def program(self, body: Block):
@@ -427,6 +444,16 @@ class ASTVisitor(InlineTransformer):
 
     def inherits(self, name, parent, body):
         return Klass(name.val, body, parent=parent.val)
+
+    def instance(self, func, args=None):
+        return Call(func.val, args)
+
+    def args(self, *args):
+        args_without_tokens = [arg for arg in args if not isinstance(arg, Token)]
+        return args_without_tokens
+
+    def arg(self, arg):
+        return arg
 
     def comp(self, lhs, op, rhs):
         node = Comparison.by(op.value)

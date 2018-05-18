@@ -206,7 +206,7 @@ class TestTypeMethodExecution:
 
         """
 
-        evaluator.evaluate(expr, run=True, print_ir=True)
+        evaluator.evaluate(expr, run=True)
         code = str(evaluator.codegen)
 
         code.should.contain('define i32 @"Integer::do_it"(%"Integer"* %".1", i32 %".2")')
