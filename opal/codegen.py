@@ -7,7 +7,7 @@ from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
 from opal import operations as ops
 from opal.ast import Program, BinaryOp, Integer, Float, String, Print, Boolean, Assign, Var, VarValue, List, IndexOf, \
-    While, If, Continue, For, Value, Klass, Funktion, Return
+    While, If, Continue, For, Value, Klass, Funktion, Return, Call
 from opal.types import Int8, Any
 from resources.llvmex import CodegenError
 
@@ -96,6 +96,10 @@ class CodeGenerator:
         return self.current_function.append_basic_block(name)
 
     def assign(self, name, value, typ):
+        if typ is Call:
+            self.symtab[name] = value
+            self.typetab[name] = typ
+            return value
 
         old_val = self.symtab.get(name)
         if old_val:
@@ -229,7 +233,8 @@ class CodeGenerator:
         t_builder = TypeBuilder(self.typetab[class_name])
         klass_type = t_builder.create()
 
-        self.current_class = None
+        ctor = Funktion(':init', params=[], body=None, ret_type=None, is_constructor=True)
+        self.visit(ctor)
         return klass_type
 
     def visit_funktion(self, node: Funktion):
@@ -267,8 +272,18 @@ class CodeGenerator:
         self.exit_blocks.append(exit_block)
         self.builder = Builder(entry_block)
 
-        ret = self.visit(node.body)
+        if node.is_constructor:
+            this = self.gep(func.args[0], [ir.Constant(Integer.as_llvm(), 0), ir.Constant(Integer.as_llvm(), 0)])
+            self.builder.store(self.module.get_global(klass.vtable_name), this)
+
+        body = node.body
+        if body:
+            ret = self.visit(body)
+        else:
+            ret = None
+
         self.branch(exit_block)
+
         if not ret:
             self.position_at_end(exit_block)
             self.builder.ret_void()
@@ -286,6 +301,14 @@ class CodeGenerator:
         ret = self.builder.ret(self.visit(node.val))
         self.position_at_end(previous_block)
         return ret
+
+    def visit_call(self, node: Call):
+        func = node.func
+        klass = self.typetab[func]
+        instance = self.alloc(klass.type, name=func.lower())
+        name = f'{func}:::init'
+        self.call(name, [instance])
+        return instance
 
     def visit_print(self, node: Print):
         val = self.visit(node.val)
@@ -475,6 +498,8 @@ class CodeGenerator:
             typ = value.type
         elif isinstance(rhs, List):
             typ = List.as_llvm().as_pointer()
+        elif isinstance(rhs, Call):
+            typ = Call
         elif not isinstance(rhs, Value):
             value = self.visit(rhs)
             typ = value.type
@@ -561,8 +586,8 @@ class ClassPrototype:
         self._module = module
         vtable_typ_name = f"{name}_vtable_type"
         self.vtable_typ = self._module.context.get_identified_type(vtable_typ_name)
-        vtable_name = f"{name}_vtable"
-        self.vtable = self._module.context.get_identified_type(vtable_name)
+        self.vtable_name = f"{name}_vtable"
+        self.vtable = self._module.context.get_identified_type(self.vtable_name)
         self.type = self._module.context.get_identified_type(name)
 
     @property
@@ -588,6 +613,8 @@ class TypeBuilder:
     def __init__(self, class_proto: ClassPrototype):
         self._module = class_proto.module
         self._name = class_proto.name
+        self.vtable_type_name = f"{self._name}_vtable_type"
+        self.vtable_name = f"{self._name}_vtable"
         self._elements = class_proto.methods or []
         parent = class_proto.parent
         if self._name != 'Object' and parent is None:
@@ -614,14 +641,15 @@ class TypeBuilder:
         return self._typ
 
     def _create_vtable_type(self, elements):
-        name = self._name
-        vtable_typ_name = f"{name}_vtable_type"
-        vtable_typ = self._module.context.get_identified_type(vtable_typ_name)
+        vtable_typ = self._module.context.get_identified_type(self.vtable_type_name)
         if not vtable_typ.is_opaque:
             return vtable_typ
         vtable_elements = [el.type for el in elements]
+
+        vtable_type_name = f"{self.parent}_vtable_type"
+
         parent_type = \
-            self.parent and self._module.context.get_identified_type(f"{self.parent}_vtable_type") or vtable_typ
+            self.parent and self._module.context.get_identified_type(vtable_type_name) or vtable_typ
         vtable_elements.insert(0, parent_type.as_pointer())
         vtable_elements.insert(1, ir.IntType(8).as_pointer())
         vtable_typ.set_body(*vtable_elements)
@@ -645,7 +673,7 @@ class TypeBuilder:
 
         fields += [ir.Constant(item.type, item.get_reference()) for item in elements]
 
-        vtable = self._module.add_global_variable(vtable_typ, name=f'{name}_vtable')
+        vtable = self._module.add_global_variable(vtable_typ, name=self.vtable_name)
         vtable.linkage = PRIVATE_LINKAGE
         vtable.unnamed_addr = False
         vtable.global_constant = True
@@ -666,4 +694,8 @@ class TypeBuilder:
 
     @property
     def type(self):
-        return self._typ
+        return self._module.context.get_identified_type(self.vtable_type_name)
+
+    @property
+    def vtable(self):
+        return self._module.context.get_identified_type(self.vtable_name)

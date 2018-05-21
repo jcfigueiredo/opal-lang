@@ -293,11 +293,12 @@ class Klass(ASTNode):
 
 
 class Funktion(ASTNode):
-    def __init__(self, name, params, body, ret_type=None):
+    def __init__(self, name, params, body, ret_type=None, is_constructor=False):
         self.name = name
         self.params = params
         self.body = body
         self.ret_type = ret_type
+        self.is_constructor = is_constructor
 
     def dump(self):
         args = ','.join([arg.dump() for arg in self.params])

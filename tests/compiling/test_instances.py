@@ -21,7 +21,7 @@ class TestInstanceSyntax:
         repres.should.contain('assign name items instance name Items args arg int 1 , arg int 2 , arg int 3')
 
 
-class TestTypeMethodAST:
+class TestInstanceAST:
     def test_has_a_representation_for_no_arg(self):
         expr = """
         number = Integer()
@@ -43,3 +43,23 @@ class TestTypeMethodAST:
         prog = parse(expr)
         prog.dump().should.contain('(= item Foo((Integer 1), (String bee), (VarValue c)))')
 
+
+class TestInstanceExecution:
+    def test_alloca_and_calls_default_constructor(self, evaluator):
+        expr = f"""
+        class Object
+        end
+
+        class Foo            
+        end
+        
+        foo = Foo()
+
+        """
+
+        evaluator.evaluate(expr, run=True, print_ir=True)
+        code = str(evaluator.codegen)
+
+        code.should.contain('define void @"Foo:::init"(%"Foo"* %".1")')
+        code.should.contain('%"foo" = alloca %"Foo"')
+        code.should.contain('call void @"Foo:::init"(%"Foo"* %"foo")')
