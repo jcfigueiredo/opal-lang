@@ -303,7 +303,8 @@ class Funktion(ASTNode):
     def dump(self):
         args = ','.join([arg.dump() for arg in self.params])
         ret_type = self.ret_type and f'{self.ret_type} ' or ''
-        return f'({ret_type}{self.name}({args}) {self.body.dump()})'
+        name = '{0}{1}'.format(self.is_constructor and ':' or '', self.name)
+        return f'({ret_type}{name}({args}) {self.body.dump()})'
 
 
 class Param(ASTNode):
@@ -427,6 +428,12 @@ class ASTVisitor(InlineTransformer):
             body = params
             return Funktion(name.val, [], body)
         return Funktion(name.val, params, body)
+
+    def ctor_(self, name, params, body=None):
+        if isinstance(params, Block):
+            body = params
+            return Funktion(name.val, [], body, is_constructor=True)
+        return Funktion(name.val, params, body, is_constructor=True)
 
     def typed_def(self, type_, name, params, body=None):
         if isinstance(params, Block):

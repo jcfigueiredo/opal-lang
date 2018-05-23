@@ -11,6 +11,8 @@ from opal.ast import Program, BinaryOp, Integer, Float, String, Print, Boolean, 
 from opal.types import Int8, Any
 from resources.llvmex import CodegenError
 
+INDICES = [ir.Constant(Integer.as_llvm(), 0), ir.Constant(Integer.as_llvm(), 0)]
+
 PRIVATE_LINKAGE = 'private'
 
 
@@ -232,10 +234,12 @@ class CodeGenerator:
 
         t_builder = TypeBuilder(self.typetab[class_name])
         klass_type = t_builder.create()
-
         ctor = Funktion(':init', params=[], body=None, ret_type=None, is_constructor=True)
         self.visit(ctor)
         return klass_type
+
+    def get_function_names(self):
+        return [f.name for f in self.module.functions]
 
     def visit_funktion(self, node: Funktion):
         klass = self.typetab[self.current_class]
@@ -273,7 +277,7 @@ class CodeGenerator:
         self.builder = Builder(entry_block)
 
         if node.is_constructor:
-            this = self.gep(func.args[0], [ir.Constant(Integer.as_llvm(), 0), ir.Constant(Integer.as_llvm(), 0)])
+            this = self.gep(func.args[0], INDICES)
             self.builder.store(self.module.get_global(klass.vtable_name), this)
 
         body = node.body
@@ -339,7 +343,7 @@ class CodeGenerator:
 
             buffer = self.alloc(ir.ArrayType(Int8.as_llvm(), 10))
 
-            buffer_ptr = self.gep(buffer, [self.const(0), self.const(0)], inbounds=True)
+            buffer_ptr = self.gep(buffer, INDICES, inbounds=True)
 
             self.call('int_to_string', [number_ptr, buffer_ptr, (self.const(10))])
 
@@ -348,7 +352,7 @@ class CodeGenerator:
 
         if typ is Float:
             percent_g = self.visit_string(String('%g\n'))
-            percent_g = self.gep(percent_g, [self.const(0), self.const(0)])
+            percent_g = self.gep(percent_g, INDICES)
 
             value = percent_g
             type_ = Int8.as_llvm().as_pointer()
@@ -359,9 +363,9 @@ class CodeGenerator:
         if typ is Boolean:
             mod = self.module
             true = self.insert_const_string(mod, 'true')
-            true = self.gep(true, [self.const(0), self.const(0)])
+            true = self.gep(true, INDICES)
             false = self.insert_const_string(mod, 'false')
-            false = self.gep(false, [self.const(0), self.const(0)])
+            false = self.gep(false, INDICES)
 
             if hasattr(val, 'constant'):
                 if val.constant:
@@ -603,9 +607,10 @@ class ClassPrototype:
 
 
 class FunctionPrototype:
-    def __init__(self, name):
+    def __init__(self, name, params, ret=None):
         self.name = name
-        self._args = []
+        self.params = params or []
+        self.ret = ret
 
 
 class TypeBuilder:
@@ -668,7 +673,7 @@ class TypeBuilder:
 
         fields = [
             vtable_constant,
-            class_string.gep([ir.Constant(Integer.as_llvm(), 0), ir.Constant(Integer.as_llvm(), 0)])
+            class_string.gep(INDICES)
         ]
 
         fields += [ir.Constant(item.type, item.get_reference()) for item in elements]
