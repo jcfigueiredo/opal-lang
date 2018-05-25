@@ -1,3 +1,4 @@
+from opal.codegen import CodeGenerator
 from tests.helpers import get_representation, parse
 
 
@@ -193,12 +194,16 @@ class TestTypeMethodExecution:
 
         code.should.contain('define void @"Integer::do_it"(%"Integer"* %".1", i32 %".2")')
 
+    # noinspection SpellCheckingInspection
     def test_accepts_return_type(self, evaluator):
+        cname = 'Integer'
+        pcname = 'Object'
+
         expr = f"""
-        class Object
+        class {pcname}
         end
 
-        class Integer
+        class {cname}
             def Cint32 do_it(val::Cint32)
                 return 42
             end
@@ -206,8 +211,19 @@ class TestTypeMethodExecution:
 
         """
 
-        evaluator.evaluate(expr, run=True)
+        evaluator.evaluate(expr, run=True, print_ir=False)
         code = str(evaluator.codegen)
+
+        code.should.contain('%"Integer" = type {%"Integer_vtable_type"*}')
+        code.should.contain('%"Integer_vtable_type" = type {%"Object_vtable_type"*, i8*, i32 (%"Integer"*, i32)*}')
+
+        class_name_ptr = CodeGenerator.get_string_name(cname)
+
+        code.should.contain(
+            f'@"{cname}_vtable" = private constant %"{cname}_vtable_type" '
+            f'{{%"{pcname}_vtable_type"* @"{pcname}_vtable", '
+            f'i8* getelementptr ([8 x i8], [8 x i8]* @"{class_name_ptr}", i32 0, i32 0), '
+            f'i32 (%"Integer"*, i32)* @"Integer::do_it"}}')
 
         code.should.contain('define i32 @"Integer::do_it"(%"Integer"* %".1", i32 %".2")')
         code.should.contain('ret i32 42')

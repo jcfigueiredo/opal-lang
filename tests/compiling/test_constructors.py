@@ -126,17 +126,15 @@ class TestConstructorAST:
 #             def :init()
 #             end
 #
-#             def do_it(val::Cint32)
-#             end
 #         end
 #
 #         """
 #
-#         evaluator.evaluate(expr, run=False, print_ir=True)
+#         evaluator.evaluate(expr, run=False)
 #         code = str(evaluator.codegen)
 #
 #         code.should.contain('define void @"Integer:::init"(%"Integer"* %".1")')
-
+#
 #     def test_accepts_parameters(self, evaluator):
 #         expr = f"""
 #         class Object

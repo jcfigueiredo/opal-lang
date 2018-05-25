@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from hashlib import sha3_256
 
 # noinspection PyPackageRequirements
@@ -7,7 +8,8 @@ from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
 from opal import operations as ops
 from opal.ast import Program, BinaryOp, Integer, Float, String, Print, Boolean, Assign, Var, VarValue, List, IndexOf, \
-    While, If, Continue, For, Value, Klass, Funktion, Return, Call
+    While, If, Continue, For, Value, Klass, Funktion, Return, Call, ASTVisitor
+from opal.parser import parser
 from opal.types import Int8, Any
 from resources.llvmex import CodegenError
 
@@ -19,6 +21,7 @@ PRIVATE_LINKAGE = 'private'
 class CodeGenerator:
     def __init__(self):
         # TODO: come up with a less naive way of handling the symtab and types
+        self.classes = None
         self.symtab = {}
         self.typetab = {}
         self.is_break = False
@@ -129,9 +132,15 @@ class CodeGenerator:
     def gep(self, ptr, indices, inbounds=False, name=''):
         return self.builder.gep(ptr, indices, inbounds, name)
 
-    def generate_code(self, node):
-        assert isinstance(node, Program)
-        return self.visit(node)
+    def generate_code(self, code):
+        visitor = ASTVisitor()
+        ast = visitor.transform(parser.parse(f"{code}\n"))
+        self.classes = visitor.classes
+        for klass in self.classes:
+            self.generate_classes_metadata(klass)
+
+        assert isinstance(ast, Program)
+        return self.visit(ast)
 
     def load(self, ptr, name=''):
         return self.builder.load(ptr, name)
@@ -221,50 +230,117 @@ class CodeGenerator:
         name = self.symtab[node.val]
         return self.load(name)
 
-    def visit_klass(self, node: Klass):
-        parent = node.parent
-        if parent and parent not in self.typetab:
+    def generate_classes_metadata(self, klass: Klass):
+        name = klass.name
+        parent = klass.parent
+
+        if name != 'Object' and parent not in [c.name for c in self.classes]:
             raise CodegenError(f'Parent class {parent} not defined')
-        class_name = node.name
+        vtable_typ_name = f"{name}_vtable_type"
+        vtable_typ = self.module.context.get_identified_type(vtable_typ_name)
+        type_ = self.module.context.get_identified_type(name)
 
-        self.current_class = class_name
-        self.typetab[class_name] = ClassPrototype(class_name, parent, self.module)
+        funk_types = OrderedDict()
+        funktions = OrderedDict()
 
-        self.visit(node.body)
-
-        t_builder = TypeBuilder(self.typetab[class_name])
-        klass_type = t_builder.create()
-        ctor = Funktion(':init', params=[], body=None, ret_type=None, is_constructor=True)
-        self.visit(ctor)
-        return klass_type
-
-    def get_function_names(self):
-        return [f.name for f in self.module.functions]
-
-    def visit_funktion(self, node: Funktion):
-        klass = self.typetab[self.current_class]
-
-        object_type = self.module.get_identified_types()['Object']
+        object_type = self.module.context.get_identified_type('Object')
 
         type_map = {
             'Cint32': Integer.as_llvm()
         }
 
-        def get_param_type(type_):
-            if type_ in type_map:
-                return type_map[type_]
+        def get_param_type(typ):
+            if typ in type_map:
+                return type_map[typ]
 
             return object_type
 
-        signature = [get_param_type(param.type) for param in node.params]
-        if node.ret_type:
-            ret = get_param_type(node.ret_type)
-        else:
-            ret = ir.VoidType()
+        for func in klass.functions:
+            funk_name = f'{name}::{func.name}'
 
-        func_ty = ir.FunctionType(ret, [klass.type.as_pointer()] + signature)
+            signature = [get_param_type(param.type) for param in func.params]
+            if func.ret_type:
+                ret = get_param_type(func.ret_type)
+            else:
+                ret = ir.VoidType()
+
+            func_ty = ir.FunctionType(ret, [type_.as_pointer()] + signature)
+            funk_types[funk_name] = func_ty
+            funk = Function(self.module, func_ty, funk_name)
+            funktions[funk_name] = funk
+
+        vtable_name = f"{name}_vtable"
+
+        vtable_elements = [el.type for el in funktions.values()]
+
+        vtable_type_name = f"{parent}_vtable_type"
+
+        parent_type = \
+            parent and self.module.context.get_identified_type(vtable_type_name) or vtable_typ
+
+        vtable_elements.insert(0, parent_type.as_pointer())
+        vtable_elements.insert(1, ir.IntType(8).as_pointer())
+        vtable_typ.set_body(*vtable_elements)
+
+        # --
+        class_string = CodeGenerator.insert_const_string(self.module, name)
+        if klass.parent:
+            parent_table_typ = self.module.context.get_identified_type(f"{parent}_vtable_type")
+            vtable_constant = ir.Constant(parent_table_typ.as_pointer(),
+                                          self.module.get_global(f'{parent}_vtable').get_reference())
+        else:
+            vtable_constant = ir.Constant(vtable_typ.as_pointer(), None)
+
+        fields = [
+            vtable_constant,
+            class_string.gep(INDICES)
+        ]
+
+        fields += [ir.Constant(item.type, item.get_reference()) for item in funktions.values()]
+
+        vtable = self.module.add_global_variable(vtable_typ, name=vtable_name)
+        vtable.linkage = PRIVATE_LINKAGE
+        vtable.unnamed_addr = False
+        vtable.global_constant = True
+        vtable.initializer = vtable_typ(
+            fields
+        )
+
+        type_ = self.module.context.get_identified_type(name)
+
+        elements = []
+        elements.insert(0, vtable_typ.as_pointer())
+        type_.set_body(*elements)
+
+    def visit_klass(self, node: Klass):
+        # parent = node.parent
+        # if parent and parent not in self.typetab:
+        #     raise CodegenError(f'Parent class {parent} not defined')
+        # class_name = node.name
+        #
+        # self.current_class = class_name
+        # self.typetab[class_name] = ClassPrototype(class_name, parent, self.module)
+        #
+        # self.visit(node.body)
+
+        # # t_builder = TypeBuilder(self.typetab[class_name])
+        # # klass_type = t_builder.create()
+        # # ctor = Funktion(':init', params=[], body=None, ret_type=None, is_constructor=True)
+        # self.visit(ctor)
+        self.current_class = node
+        body = self.visit(node.body)
+        self.current_class = None
+        return body
+
+    def get_function_names(self):
+        return [f.name for f in self.module.functions]
+
+    def visit_funktion(self, node: Funktion):
+        klass = self.current_class
+
         method_name = f'{klass.name}::{node.name}'
-        func = Function(self.module, func_ty, method_name)
+
+        func = list(filter(lambda f: f.name == method_name, self.module.functions))[0]
 
         self.function_stack.append(func)
 
@@ -296,7 +372,7 @@ class CodeGenerator:
         self.builder = old_builder
         self.exit_blocks.pop()
         self.function_stack.pop()
-        self.typetab[self.current_class].add_method(func)
+
         return func
 
     def visit_return(self, node: Return):
@@ -307,6 +383,7 @@ class CodeGenerator:
         return ret
 
     def visit_call(self, node: Call):
+        # import ipdb; ipdb.set_trace();
         func = node.func
         klass = self.typetab[func]
         instance = self.alloc(klass.type, name=func.lower())
@@ -580,127 +657,3 @@ class CodeGenerator:
             return self.builder.fcmp_ordered('!=', result, self.const(0.0))
 
         raise NotImplementedError('Unsupported cast')
-
-
-class ClassPrototype:
-    def __init__(self, name, parent, module):
-        self.name = name
-        self.parent = parent
-        self._methods = []
-        self._module = module
-        vtable_typ_name = f"{name}_vtable_type"
-        self.vtable_typ = self._module.context.get_identified_type(vtable_typ_name)
-        self.vtable_name = f"{name}_vtable"
-        self.vtable = self._module.context.get_identified_type(self.vtable_name)
-        self.type = self._module.context.get_identified_type(name)
-
-    @property
-    def module(self):
-        return self._module
-
-    @property
-    def methods(self):
-        return self._methods
-
-    def add_method(self, method):
-        self._methods.append(method)
-
-
-class FunctionPrototype:
-    def __init__(self, name, params, ret=None):
-        self.name = name
-        self.params = params or []
-        self.ret = ret
-
-
-class TypeBuilder:
-    # def __init__(self, module: Module, name: str, elements: list = None, parent=None):
-    def __init__(self, class_proto: ClassPrototype):
-        self._module = class_proto.module
-        self._name = class_proto.name
-        self.vtable_type_name = f"{self._name}_vtable_type"
-        self.vtable_name = f"{self._name}_vtable"
-        self._elements = class_proto.methods or []
-        parent = class_proto.parent
-        if self._name != 'Object' and parent is None:
-            parent = 'Object'
-        self.parent = parent
-        self._typ = None
-        self._functions = {}
-
-    def _pointer(self):
-        return self._typ.as_pointer()
-
-    def create(self):
-        name = self._name
-        elements = self._elements
-        vtable_typ = self._create_vtable_type(elements)
-
-        self._create_vtable(vtable_typ, elements)
-        self._typ = self._module.context.get_identified_type(name)
-
-        # elements = [el.type for el in elements]
-        elements = []
-        elements.insert(0, vtable_typ.as_pointer())
-        self._typ.set_body(*elements)
-        return self._typ
-
-    def _create_vtable_type(self, elements):
-        vtable_typ = self._module.context.get_identified_type(self.vtable_type_name)
-        if not vtable_typ.is_opaque:
-            return vtable_typ
-        vtable_elements = [el.type for el in elements]
-
-        vtable_type_name = f"{self.parent}_vtable_type"
-
-        parent_type = \
-            self.parent and self._module.context.get_identified_type(vtable_type_name) or vtable_typ
-        vtable_elements.insert(0, parent_type.as_pointer())
-        vtable_elements.insert(1, ir.IntType(8).as_pointer())
-        vtable_typ.set_body(*vtable_elements)
-        return vtable_typ
-
-    def _create_vtable(self, vtable_typ, elements=None):
-        elements = elements or []
-        name = self._name
-        class_string = CodeGenerator.insert_const_string(self._module, name)
-        if self.parent:
-            parent_table_typ = self._module.context.get_identified_type(f"{self.parent}_vtable_type")
-            vtable_constant = ir.Constant(parent_table_typ.as_pointer(),
-                                          self._module.get_global(f'{self.parent}_vtable').get_reference())
-        else:
-            vtable_constant = ir.Constant(vtable_typ.as_pointer(), None)
-
-        fields = [
-            vtable_constant,
-            class_string.gep(INDICES)
-        ]
-
-        fields += [ir.Constant(item.type, item.get_reference()) for item in elements]
-
-        vtable = self._module.add_global_variable(vtable_typ, name=self.vtable_name)
-        vtable.linkage = PRIVATE_LINKAGE
-        vtable.unnamed_addr = False
-        vtable.global_constant = True
-        vtable.initializer = vtable_typ(
-            fields
-        )
-
-    def add_function(self, name, signature=None, ret=None):
-        if not signature:
-            signature = []
-        if not ret:
-            ret = ir.VoidType()
-
-        func_ty = ir.FunctionType(ret, [self._pointer()] + signature)
-        func = Function(self._module, func_ty, name)
-        self._functions[name] = func
-        return func
-
-    @property
-    def type(self):
-        return self._module.context.get_identified_type(self.vtable_type_name)
-
-    @property
-    def vtable(self):
-        return self._module.context.get_identified_type(self.vtable_name)

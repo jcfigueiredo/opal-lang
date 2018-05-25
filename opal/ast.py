@@ -282,16 +282,6 @@ class IndexOf(ASTNode):
         self.index = index
 
 
-class Klass(ASTNode):
-    def __init__(self, name, body: Block, parent=None):
-        self.name = name
-        self.body = body
-        self.parent = parent
-
-    def dump(self):
-        return f'(class {self.name}{self.body.dump()})'
-
-
 class Funktion(ASTNode):
     def __init__(self, name, params, body, ret_type=None, is_constructor=False):
         self.name = name
@@ -305,6 +295,22 @@ class Funktion(ASTNode):
         ret_type = self.ret_type and f'{self.ret_type} ' or ''
         name = '{0}{1}'.format(self.is_constructor and ':' or '', self.name)
         return f'({ret_type}{name}({args}) {self.body.dump()})'
+
+
+class Klass(ASTNode):
+    def __init__(self, name, body: Block, parent=None):
+        self.name = name
+        self.body = body
+        self.parent = parent
+        if name != 'Object' and not parent:
+            self.parent = 'Object'
+        self.functions = []
+
+    def dump(self):
+        return f'(class {self.name}{self.body.dump()})'
+
+    def add_function(self, funktion: Funktion):
+        self.functions.append(funktion)
 
 
 class Param(ASTNode):
@@ -352,6 +358,21 @@ class Call(ASTNode):
 
 # noinspection PyMethodMayBeStatic
 class ASTVisitor(InlineTransformer):
+
+    def __init__(self):
+        self.classes = []
+        self.functions = []
+        super().__init__()
+
+    def add_klass(self, klass):
+        for f in self.functions:
+            klass.add_function(f)
+        self.classes.append(klass)
+        self.functions = []
+
+    def add_funktion(self, funktion):
+        self.functions.append(funktion)
+
     def program(self, body: Block):
         program = Program(body)
         return program
@@ -421,25 +442,38 @@ class ASTVisitor(InlineTransformer):
         return For(var, iterable, body)
 
     def class_(self, name, body):
-        return Klass(name.val, body)
+        klass = Klass(name.val, body)
+        self.add_klass(klass)
+        return klass
+
+    def inherits(self, name, parent, body):
+        klass = Klass(name.val, body, parent=parent.val)
+        self.add_klass(klass)
+        return klass
 
     def def_(self, name, params, body=None):
         if isinstance(params, Block):
             body = params
-            return Funktion(name.val, [], body)
-        return Funktion(name.val, params, body)
+            params = []
+        funktion = Funktion(name.val, params, body)
+        self.add_funktion(funktion)
+        return funktion
 
     def ctor_(self, name, params, body=None):
         if isinstance(params, Block):
             body = params
-            return Funktion(name.val, [], body, is_constructor=True)
-        return Funktion(name.val, params, body, is_constructor=True)
+            params = []
+        funktion = Funktion(name.val, params, body, is_constructor=True)
+        self.add_funktion(funktion)
+        return funktion
 
     def typed_def(self, type_, name, params, body=None):
         if isinstance(params, Block):
             body = params
-            return Funktion(name.val, [], body, type_.value)
-        return Funktion(name.val, params, body, type_.value)
+            params = []
+        funktion = Funktion(name.val, params, body, ret_type=type_.value)
+        self.add_funktion(funktion)
+        return funktion
 
     def params(self, *nodes):
         return [node for node in nodes if isinstance(node, Param)]
@@ -449,9 +483,6 @@ class ASTVisitor(InlineTransformer):
 
     def ret_(self, val):
         return Return(val)
-
-    def inherits(self, name, parent, body):
-        return Klass(name.val, body, parent=parent.val)
 
     def instance(self, func, args=None):
         return Call(func.val, args)

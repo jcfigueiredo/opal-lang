@@ -44,22 +44,22 @@ class TestInstanceAST:
         prog.dump().should.contain('(= item Foo((Integer 1), (String bee), (VarValue c)))')
 
 
-class TestInstanceExecution:
-    def test_alloca_and_calls_default_constructor(self, evaluator):
-        expr = f"""
-        class Object
-        end
-
-        class Foo            
-        end
-        
-        foo = Foo()
-
-        """
-
-        evaluator.evaluate(expr, run=True, print_ir=True)
-        code = str(evaluator.codegen)
-
-        code.should.contain('define void @"Foo:::init"(%"Foo"* %".1")')
-        code.should.contain('%"foo" = alloca %"Foo"')
-        code.should.contain('call void @"Foo:::init"(%"Foo"* %"foo")')
+# class TestInstanceExecution:
+#     def test_alloca_and_calls_default_constructor(self, evaluator):
+#         expr = f"""
+#         class Object
+#         end
+#
+#         class Foo
+#         end
+#
+#         foo = Foo()
+#
+#         """
+#
+#         evaluator.evaluate(expr, run=True, print_ir=True)
+#         code = str(evaluator.codegen)
+#
+#         code.should.contain('define void @"Foo:::init"(%"Foo"* %".1")')
+#         code.should.contain('%"foo" = alloca %"Foo"')
+#         code.should.contain('call void @"Foo:::init"(%"Foo"* %"foo")')
