@@ -1,3 +1,5 @@
+import pytest
+
 from tests.helpers import get_representation, parse
 
 
@@ -116,74 +118,75 @@ class TestConstructorAST:
         prog.dump().should.contain('(class Integer(Block\n  (:init(val::Cint32) (Block\n  (Boolean true)))))')
 
 
-# class TestConstructorExecution:
-#     def test_generates_a_function(self, evaluator):
-#         expr = f"""
-#         class Object
-#         end
-#
-#         class Integer
-#             def :init()
-#             end
-#
-#         end
-#
-#         """
-#
-#         evaluator.evaluate(expr, run=False)
-#         code = str(evaluator.codegen)
-#
-#         code.should.contain('define void @"Integer:::init"(%"Integer"* %".1")')
-#
-#     def test_accepts_parameters(self, evaluator):
-#         expr = f"""
-#         class Object
-#         end
-#
-#         class Integer
-#             def do_it(a, b)
-#             end
-#         end
-#
-#         """
-#
-#         evaluator.evaluate(expr, run=True)
-#         code = str(evaluator.codegen)
-#
-#         code.should.contain('define void @"Integer::do_it"(%"Integer"* %".1", %"Object" %".2", %"Object" %".3")')
-#
-#     def test_accepts_typed_parameters(self, evaluator):
-#         expr = f"""
-#         class Object
-#         end
-#
-#         class Integer
-#             def do_it(val::Cint32)
-#             end
-#         end
-#
-#         """
-#
-#         evaluator.evaluate(expr, run=True)
-#         code = str(evaluator.codegen)
-#
-#         code.should.contain('define void @"Integer::do_it"(%"Integer"* %".1", i32 %".2")')
-#
-#     def test_accepts_return_type(self, evaluator):
-#         expr = f"""
-#         class Object
-#         end
-#
-#         class Integer
-#             def Cint32 do_it(val::Cint32)
-#                 return 42
-#             end
-#         end
-#
-#         """
-#
-#         evaluator.evaluate(expr, run=True)
-#         code = str(evaluator.codegen)
-#
-#         code.should.contain('define i32 @"Integer::do_it"(%"Integer"* %".1", i32 %".2")')
-#         code.should.contain('ret i32 42')
+@pytest.mark.skip
+class TestConstructorExecution:
+    def test_generates_a_function(self, evaluator):
+        expr = f"""
+        class Object
+        end
+
+        class Integer
+            def :init()
+            end
+
+        end
+
+        """
+
+        evaluator.evaluate(expr, run=False)
+        code = str(evaluator.codegen)
+
+        code.should.contain('define void @"Integer:::init"(%"Integer"* %".1")')
+
+    def test_accepts_parameters(self, evaluator):
+        expr = f"""
+        class Object
+        end
+
+        class Integer
+            def do_it(a, b)
+            end
+        end
+
+        """
+
+        evaluator.evaluate(expr, run=True)
+        code = str(evaluator.codegen)
+
+        code.should.contain('define void @"Integer::do_it"(%"Integer"* %".1", %"Object" %".2", %"Object" %".3")')
+
+    def test_accepts_typed_parameters(self, evaluator):
+        expr = f"""
+        class Object
+        end
+
+        class Integer
+            def do_it(val::Cint32)
+            end
+        end
+
+        """
+
+        evaluator.evaluate(expr, run=True)
+        code = str(evaluator.codegen)
+
+        code.should.contain('define void @"Integer::do_it"(%"Integer"* %".1", i32 %".2")')
+
+    def test_accepts_return_type(self, evaluator):
+        expr = f"""
+        class Object
+        end
+
+        class Integer
+            def Cint32 do_it(val::Cint32)
+                return 42
+            end
+        end
+
+        """
+
+        evaluator.evaluate(expr, run=True)
+        code = str(evaluator.codegen)
+
+        code.should.contain('define i32 @"Integer::do_it"(%"Integer"* %".1", i32 %".2")')
+        code.should.contain('ret i32 42')
