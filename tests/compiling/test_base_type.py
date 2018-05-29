@@ -33,7 +33,7 @@ class TestTypeCreationAST:
         end
         """
         prog = parse(expr)
-        prog.dump().should.contain(f'(class Object(Block\n  ))')
+        prog.dump().should.contain(f'(class Object(Block\n  (:init() (Block\n  )))')
 
 
 class TestTypeCreationWithInheritanceAST:
@@ -43,7 +43,7 @@ class TestTypeCreationWithInheritanceAST:
         end
         """
         prog = parse(expr)
-        prog.dump().should.contain(f'(class Integer(Block\n  ))')
+        prog.dump().should.contain(f'(class Integer(Block\n  (:init() (Block\n  )))')
 
 
 class TestCreatingANewType:
@@ -62,7 +62,7 @@ class TestCreatingANewType:
         self.code.should.contain('%"Object" = type {%"Object_vtable_type"*}')
 
     def test_creates_the_vtable_type(self):
-        self.code.should.contain('%"Object_vtable_type" = type {%"Object_vtable_type"*, i8*}')
+        self.code.should.contain('%"Object_vtable_type" = type {%"Object_vtable_type"*, i8*, void (%"Object"*)*}')
 
     def test_sets_the_type_name(self):
         self.code.should.contain('private unnamed_addr constant [7 x i8] c"Object\\00"')
@@ -71,7 +71,8 @@ class TestCreatingANewType:
         class_name = CodeGenerator.get_string_name('Object')
         self.code.should.contain(
             f'@"Object_vtable" = private constant %"Object_vtable_type" {{%"Object_vtable_type"* null, '
-            f'i8* getelementptr ([7 x i8], [7 x i8]* @"{class_name}", i32 0, i32 0)}}')
+            f'i8* getelementptr ([7 x i8], [7 x i8]* @"{class_name}", i32 0, i32 0), '
+            f'void (%"Object"*)* @"Object::init"}}')
 
 
 class TestClassWithNoParentDefined:
@@ -81,7 +82,7 @@ class TestClassWithNoParentDefined:
         end
         """
         evaluator = OpalEvaluator()
-        evaluator.evaluate.\
+        evaluator.evaluate. \
             when.called_with(expr, run=False).should.throw(CodegenError, 'Parent class Bogus not defined')
 
 
@@ -103,7 +104,7 @@ class TestCreatingANewTypeWithInheritance:
         cls.code = str(evaluator.codegen)
 
     def test_creates_the_vtable_type_pointing_to_parent(self):
-        self.code.should.contain('%"Integer_vtable_type" = type {%"Object_vtable_type"*, i8*}')
+        self.code.should.contain('%"Integer_vtable_type" = type {%"Object_vtable_type"*, i8*, void (%"Integer"*)*}')
 
     def test_sets_the_type_name(self):
         self.code.should.contain('private unnamed_addr constant [8 x i8] c"Integer\\00"')
@@ -119,7 +120,8 @@ class TestCreatingANewTypeWithInheritance:
         self.code.should.contain(
             f'@"{cname}_vtable" = private constant %"{cname}_vtable_type" '
             f'{{%"{pcname}_vtable_type"* @"{pcname}_vtable", '
-            f'i8* getelementptr ([8 x i8], [8 x i8]* @"{class_name_ptr}", i32 0, i32 0)}}')
+            f'i8* getelementptr ([8 x i8], [8 x i8]* @"{class_name_ptr}", i32 0, i32 0), '
+            f'void (%"{cname}"*)* @"{cname}::init"}}')
 
 
 class TestTypesWithExplicitInheritance:
@@ -141,7 +143,7 @@ class TestTypesWithExplicitInheritance:
         cls.code = str(evaluator.codegen)
 
     def test_inherits_from_object_automatically(self):
-        self.code.should.contain('%"Integer_vtable_type" = type {%"Object_vtable_type"*, i8*}')
+        self.code.should.contain('%"Integer_vtable_type" = type {%"Object_vtable_type"*, i8*, void (%"Integer"*)*}')
 
     # noinspection SpellCheckingInspection
     def test_creates_the_vtable_pointing_to_object_vtable_automatically(self):
@@ -151,4 +153,5 @@ class TestTypesWithExplicitInheritance:
         self.code.should.contain(
             f'@"{cname}_vtable" = private constant %"{cname}_vtable_type" '
             f'{{%"{pcname}_vtable_type"* @"{pcname}_vtable", '
-            f'i8* getelementptr ([8 x i8], [8 x i8]* @"{class_name_ptr}", i32 0, i32 0)}}')
+            f'i8* getelementptr ([8 x i8], [8 x i8]* @"{class_name_ptr}", i32 0, i32 0), '
+            f'void (%"{cname}"*)* @"{cname}::init"}}')

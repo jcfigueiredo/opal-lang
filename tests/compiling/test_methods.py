@@ -83,7 +83,7 @@ class TestTypeMethodAST:
         end
         """
         prog = parse(expr)
-        prog.dump().should.contain('(class Integer(Block\n  (do_it(val) (Block\n  (Boolean true)))))')
+        prog.dump().should.contain('(class Integer(Block\n  (do_it(val) (Block\n  (Boolean true)')
 
     def test_has_a_representation_for_multiple_args(self):
         expr = """
@@ -94,7 +94,7 @@ class TestTypeMethodAST:
         end
         """
         prog = parse(expr)
-        prog.dump().should.contain('(class Integer(Block\n  (do_it(val,other) (Block\n  (Boolean true)))))')
+        prog.dump().should.contain('(class Integer(Block\n  (do_it(val,other) (Block\n  (Boolean true)')
 
     def test_has_a_representation_for_no_args(self):
         expr = """
@@ -105,7 +105,7 @@ class TestTypeMethodAST:
         end
         """
         prog = parse(expr)
-        prog.dump().should.contain('(class Integer(Block\n  (do_it() (Block\n  (Boolean true)))))')
+        prog.dump().should.contain('(class Integer(Block\n  (do_it() (Block\n  (Boolean true)')
 
     def test_has_a_representation_for_typed_args(self):
         expr = """
@@ -116,7 +116,7 @@ class TestTypeMethodAST:
         end
         """
         prog = parse(expr)
-        prog.dump().should.contain('(class Integer(Block\n  (do_it(val::Cint32) (Block\n  (Boolean true)))))')
+        prog.dump().should.contain('(class Integer(Block\n  (do_it(val::Cint32) (Block\n  (Boolean true)')
 
     def test_has_a_representation_for_returning_type(self):
         expr = """
@@ -127,7 +127,7 @@ class TestTypeMethodAST:
         end
         """
         prog = parse(expr)
-        prog.dump().should.contain('(class Integer(Block\n  (Cint32 do_it(val::Cint32) (Block\n  (Boolean true)))))')
+        prog.dump().should.contain('(class Integer(Block\n  (Cint32 do_it(val::Cint32) (Block\n  (Boolean true)')
 
     def test_has_a_representation_for_returns(self):
         expr = """
@@ -139,7 +139,7 @@ class TestTypeMethodAST:
         """
         prog = parse(expr)
         prog.dump().should.contain('(class Integer(Block\n  (Cint32 do_it(val::Cint32) (Block\n  '
-                                   '(Return (Integer 15))))))')
+                                   '(Return (Integer 15)')
 
 
 class TestTypeMethodExecution:
@@ -215,7 +215,8 @@ class TestTypeMethodExecution:
         code = str(evaluator.codegen)
 
         code.should.contain('%"Integer" = type {%"Integer_vtable_type"*}')
-        code.should.contain('%"Integer_vtable_type" = type {%"Object_vtable_type"*, i8*, i32 (%"Integer"*, i32)*}')
+        code.should.contain('%"Integer_vtable_type" = type {%"Object_vtable_type"*, i8*, i32 (%"Integer"*, i32)*, '
+                            'void (%"Integer"*)*}')
 
         class_name_ptr = CodeGenerator.get_string_name(cname)
 
@@ -223,7 +224,7 @@ class TestTypeMethodExecution:
             f'@"{cname}_vtable" = private constant %"{cname}_vtable_type" '
             f'{{%"{pcname}_vtable_type"* @"{pcname}_vtable", '
             f'i8* getelementptr ([8 x i8], [8 x i8]* @"{class_name_ptr}", i32 0, i32 0), '
-            f'i32 (%"Integer"*, i32)* @"Integer::do_it"}}')
+            f'i32 (%"Integer"*, i32)* @"Integer::do_it", void (%"Integer"*)* @"Integer::init"}}')
 
         code.should.contain('define i32 @"Integer::do_it"(%"Integer"* %".1", i32 %".2")')
         code.should.contain('ret i32 42')

@@ -72,50 +72,64 @@ class TestConstructorSyntax:
 
 
 class TestConstructorAST:
+    def test_has_a_default_constructor_when_no_constructor_is_specified(self):
+        expr = """
+        class Integer
+        end
+        """
+        prog = parse(expr)
+        prog.dump().should.contain('(class Integer(Block\n  (:init()')
+
     def test_has_a_representation_for_no_args(self):
         expr = """
         class Integer
             def :init()
-                true
             end
         end
         """
         prog = parse(expr)
-        prog.dump().should.contain('(class Integer(Block\n  (:init() (Block\n  (Boolean true)))))')
+        prog.dump().should.contain('(class Integer(Block\n  (:init()')
+
+    def test_should_have_only_one_default_constructor(self):
+        expr = """
+        class Integer
+            def :init()
+            end
+        end
+        """
+        prog = parse(expr)
+        prog.dump().should.be.equal('(Program\n  (Block\n  (class Integer(Block\n  (:init() (Block\n  ))))))')
 
     def test_has_a_representation_with_one_arg(self):
         expr = """
         class Integer
             def :init(val)
-                true
             end
         end
         """
         prog = parse(expr)
-        prog.dump().should.contain('(class Integer(Block\n  (:init(val) (Block\n  (Boolean true)))))')
+        prog.dump().should.contain('(class Integer(Block\n  (:init(val)')
 
     def test_has_a_representation_for_multiple_args(self):
         expr = """
         class Integer
             def :init(val, other)
-                true
             end
         end
         """
         prog = parse(expr)
-        prog.dump().should.contain('(class Integer(Block\n  (:init(val,other) (Block\n  (Boolean true)))))')
+        prog.dump().should.contain('(class Integer(Block\n  (:init(val,other)')
 
     def test_has_a_representation_for_typed_args(self):
         expr = """
         class Integer
             def :init(val::Cint32)
-                true
             end
         end
         """
         prog = parse(expr)
 
-        prog.dump().should.contain('(class Integer(Block\n  (:init(val::Cint32) (Block\n  (Boolean true)))))')
+        prog.dump().should.contain('(class Integer(Block\n  (:init(val::Cint32)')
 
 
 @pytest.mark.skip

@@ -312,6 +312,11 @@ class Klass(ASTNode):
     def add_function(self, funktion: Funktion):
         self.functions.append(funktion)
 
+    def get_funktion_by_name(self, name):
+        for funktion in self.functions:
+            if funktion.name == name:
+                return funktion
+
 
 class Param(ASTNode):
     def __init__(self, name, type_):
@@ -365,10 +370,20 @@ class ASTVisitor(InlineTransformer):
         super().__init__()
 
     def add_klass(self, klass):
-        for f in self.functions:
-            klass.add_function(f)
+        has_constructor = False
+
+        for funktion in self.functions:
+            has_constructor |= funktion.is_constructor
+            klass.add_function(funktion)
+
+        if not has_constructor:
+            default_constructor = Funktion('init', params=[], body=Block(), is_constructor=True)
+            klass.body.statements.append(default_constructor)
+            klass.add_function(default_constructor)
+
         self.classes.append(klass)
         self.functions = []
+        return klass
 
     def add_funktion(self, funktion):
         self.functions.append(funktion)
@@ -443,12 +458,12 @@ class ASTVisitor(InlineTransformer):
 
     def class_(self, name, body):
         klass = Klass(name.val, body)
-        self.add_klass(klass)
+        klass = self.add_klass(klass)
         return klass
 
     def inherits(self, name, parent, body):
         klass = Klass(name.val, body, parent=parent.val)
-        self.add_klass(klass)
+        klass = self.add_klass(klass)
         return klass
 
     def def_(self, name, params, body=None):

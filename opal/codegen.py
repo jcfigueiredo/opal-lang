@@ -8,7 +8,7 @@ from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
 from opal import operations as ops
 from opal.ast import Program, BinaryOp, Integer, Float, String, Print, Boolean, Assign, Var, VarValue, List, IndexOf, \
-    While, If, Continue, For, Value, Klass, Funktion, Return, Call, ASTVisitor
+    While, If, Continue, For, Value, Klass, Funktion, Return, Call, ASTVisitor, Block
 from opal.parser import parser
 from opal.types import Int8, Any
 from resources.llvmex import CodegenError
@@ -136,6 +136,7 @@ class CodeGenerator:
         visitor = ASTVisitor()
         ast = visitor.transform(parser.parse(f"{code}\n"))
         self.classes = visitor.classes
+
         for klass in self.classes:
             self.generate_classes_metadata(klass)
 
@@ -230,6 +231,7 @@ class CodeGenerator:
         name = self.symtab[node.val]
         return self.load(name)
 
+    # TODO: refactor
     def generate_classes_metadata(self, klass: Klass):
         name = klass.name
         parent = klass.parent
@@ -313,22 +315,9 @@ class CodeGenerator:
         type_.set_body(*elements)
 
     def visit_klass(self, node: Klass):
-        # parent = node.parent
-        # if parent and parent not in self.typetab:
-        #     raise CodegenError(f'Parent class {parent} not defined')
-        # class_name = node.name
-        #
-        # self.current_class = class_name
-        # self.typetab[class_name] = ClassPrototype(class_name, parent, self.module)
-        #
-        # self.visit(node.body)
-
-        # # t_builder = TypeBuilder(self.typetab[class_name])
-        # # klass_type = t_builder.create()
-        # # ctor = Funktion(':init', params=[], body=None, ret_type=None, is_constructor=True)
-        # self.visit(ctor)
         self.current_class = node
         body = self.visit(node.body)
+
         self.current_class = None
         return body
 
@@ -354,7 +343,7 @@ class CodeGenerator:
 
         if node.is_constructor:
             this = self.gep(func.args[0], INDICES)
-            self.builder.store(self.module.get_global(klass.vtable_name), this)
+            self.builder.store(self.module.get_global(f'{klass.name}_vtable'), this)
 
         body = node.body
         if body:
@@ -383,11 +372,16 @@ class CodeGenerator:
         return ret
 
     def visit_call(self, node: Call):
-        # import ipdb; ipdb.set_trace();
         func = node.func
-        klass = self.typetab[func]
-        instance = self.alloc(klass.type, name=func.lower())
-        name = f'{func}:::init'
+
+        klass = self.get_klass_by_name(name=func)
+
+        klass_name = klass.name
+        klass_type = self.module.context.get_identified_type(klass_name)
+
+        instance = self.alloc(klass_type, name=klass_name.lower())
+
+        name = f'{func}::init'
         self.call(name, [instance])
         return instance
 
@@ -657,3 +651,8 @@ class CodeGenerator:
             return self.builder.fcmp_ordered('!=', result, self.const(0.0))
 
         raise NotImplementedError('Unsupported cast')
+
+    def get_klass_by_name(self, name):
+        for klass in self.classes:
+            if klass.name == name:
+                return klass
