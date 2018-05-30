@@ -1,5 +1,3 @@
-import pytest
-
 from tests.helpers import get_representation, parse
 
 
