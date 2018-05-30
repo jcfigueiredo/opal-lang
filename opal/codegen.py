@@ -174,12 +174,11 @@ class CodeGenerator:
         return '_'.join(['str', str(m.hexdigest())])
 
     def call(self, name, args):
-        if isinstance(name, str):
-            func = self.module.get_global(name)
-        else:
-            func = self.module.get_global(name.name)
+        func = self.module.get_global(name)
+
         if func is None:
             raise TypeError('Calling non existing function')
+
         return self.builder.call(func, args)
 
     def const(self, val):

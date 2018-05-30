@@ -2,7 +2,7 @@ from opal.codegen import CodeGenerator
 from tests.helpers import get_representation, parse
 
 
-class TestTypeMethodSyntax:
+class TestMethodDeclarationSyntax:
     def test_is_supported(self):
         expr = """
         class Integer
@@ -73,7 +73,45 @@ class TestTypeMethodSyntax:
         repres.should.contain('typed_def Cint32 name do_it params param name val Cint32 block ret_ int 10')
 
 
-class TestTypeMethodAST:
+class TestMethodCallSyntax:
+    def test_is_supported(self):
+        expr = """
+        class MyClass
+            def say_42()
+                return 42
+            end
+        end
+        mc = MyClass()
+        
+        mc.say_42()
+        """
+
+        repres = get_representation(expr)
+        repres.should.contain('class_ name MyClass')
+        repres.should.contain('def_ name say_42 block')
+        repres.should.contain('ret_ int 42')
+        repres.should.contain('assign name mc instance name MyClass')
+        repres.should.contain('method_call name mc name say_42')
+
+    def test_variable_assigning_is_supported(self):
+        expr = """
+        class MyClass
+            def say_42()
+                return 42
+            end
+        end
+        mc = MyClass()
+        
+        forty_two = mc.say_42()
+        """
+
+        repres = get_representation(expr)
+
+        repres.should.contain('method_call name mc name say_42')
+        repres.should.contain('assign name forty_two method_call name mc name say_42')
+
+
+class TestTypeMethodDeclarationAST:
     def test_has_a_representation(self):
         expr = """
         class Integer
@@ -142,7 +180,51 @@ class TestTypeMethodAST:
                                    '(Return (Integer 15)')
 
 
-class TestTypeMethodExecution:
+class TestTypeMethodCallAST:
+    def test_has_a_representation(self):
+        expr = """
+        class MyClass
+            def say_42()
+                return 42
+            end
+        end
+        mc = MyClass()
+        
+        mc.say_42()
+        """
+        prog = parse(expr)
+        prog.dump().should.contain('(= mc MyClass())\n(mc.say_42 )')
+
+    def test_has_representation_for_parameters(self):
+        expr = """
+        class MyClass
+            def say_42()
+                return 42
+            end
+        end
+        mc = MyClass()
+        
+        mc.say_42(1, "2")
+        """
+        prog = parse(expr)
+        prog.dump().should.contain('(= mc MyClass())\n(mc.say_42 (Integer 1), (String 2))')
+
+    def test_has_representation_for_assigning_to_variables(self):
+        expr = """
+        class MyClass
+            def say_42()
+                return 42
+            end
+        end
+        mc = MyClass()
+        
+        forty_two = mc.say_42()
+        """
+        prog = parse(expr)
+        prog.dump().should.contain('(= mc MyClass())\n(= forty_two (mc.say_42 ))')
+
+
+class TestTypeMethodDeclaration:
     def test_generates_a_function(self, evaluator):
         expr = f"""
         class Object
@@ -228,3 +310,23 @@ class TestTypeMethodExecution:
 
         code.should.contain('define i32 @"Integer::do_it"(%"Integer"* %".1", i32 %".2")')
         code.should.contain('ret i32 42')
+
+
+# class TestTypeMethodExecution:
+#     def test_generates_a_function(self, evaluator):
+#         expr = f"""
+#         class Object
+#         end
+#
+#         class Integer
+#             def do_it()
+#             end
+#         end
+#
+#         """
+#
+#         evaluator.evaluate(expr, run=True)
+#         code = str(evaluator.codegen)
+#
+#         code.should.contain('define void @"Integer::do_it"(%"Integer"* %".1")')
+#

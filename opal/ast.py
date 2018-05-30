@@ -312,11 +312,6 @@ class Klass(ASTNode):
     def add_function(self, funktion: Funktion):
         self.functions.append(funktion)
 
-    def get_funktion_by_name(self, name):
-        for funktion in self.functions:
-            if funktion.name == name:
-                return funktion
-
 
 class Param(ASTNode):
     def __init__(self, name, type_):
@@ -351,14 +346,28 @@ class Call(ASTNode):
 
         if args is None:
             args = []
-        elif not isinstance(args, Iterable):
-            args = [args]
 
         self.args = args
 
     def dump(self):
         args = ', '.join([arg.dump() for arg in self.args])
         return f'{self.func}({args})'
+
+
+class MethodCall(ASTNode):
+
+    def __init__(self, instance, method, args):
+        self.instance = instance
+        self.method = method
+
+        if args is None:
+            args = []
+
+        self.args = args
+
+    def dump(self):
+        args = ', '.join([arg.dump() for arg in self.args])
+        return f'({self.instance}.{self.method} {args})'
 
 
 # noinspection PyMethodMayBeStatic
@@ -483,9 +492,6 @@ class ASTVisitor(InlineTransformer):
         return funktion
 
     def typed_def(self, type_, name, params, body=None):
-        if isinstance(params, Block):
-            body = params
-            params = []
         funktion = Funktion(name.val, params, body, ret_type=type_.value)
         self.add_funktion(funktion)
         return funktion
@@ -502,6 +508,9 @@ class ASTVisitor(InlineTransformer):
     def instance(self, func, args=None):
         return Call(func.val, args)
 
+    def method_call(self, instance, method, args=None):
+        return MethodCall(instance.val, method.val, args)
+
     def args(self, *args):
         args_without_tokens = [arg for arg in args if not isinstance(arg, Token)]
         return args_without_tokens
@@ -511,6 +520,7 @@ class ASTVisitor(InlineTransformer):
 
     def comp(self, lhs, op, rhs):
         node = Comparison.by(op.value)
-        if not node:
-            raise SyntaxError(f'The operation [{op}] is not supported.')
+
+        if not node:  # pragma: no cover
+            raise SyntaxError(f'The operation [{op}] is not supported.')  # pragma: no cover
         return node(lhs, rhs)
