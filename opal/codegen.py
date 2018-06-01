@@ -8,7 +8,7 @@ from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
 from opal import operations as ops
 from opal.ast import Program, BinaryOp, Integer, Float, String, Print, Boolean, Assign, Var, VarValue, List, IndexOf, \
-    While, If, Continue, For, Value, Klass, Funktion, Return, Call, ASTVisitor, Block
+    While, If, Continue, For, Value, Klass, Funktion, Return, Call, ASTVisitor, MethodCall, get_param_type
 from opal.parser import parser
 from opal.types import Int8, Any
 from resources.llvmex import CodegenError
@@ -100,8 +100,8 @@ class CodeGenerator:
     def add_block(self, name):
         return self.current_function.append_basic_block(name)
 
-    def assign(self, name, value, typ):
-        if typ is Call:
+    def assign(self, name, value, typ, is_class=False):
+        if is_class:
             self.symtab[name] = value
             self.typetab[name] = typ
             return value
@@ -117,6 +117,12 @@ class CodeGenerator:
         self.symtab[name] = var_address
         self.typetab[name] = typ
         return var_address
+
+    def get_var(self, name):
+        return self.symtab[name]
+
+    def get_var_type(self, name):
+        return self.typetab[name]
 
     # noinspection SpellCheckingInspection
     def bitcast(self, value, type_):
@@ -230,7 +236,7 @@ class CodeGenerator:
         name = self.symtab[node.val]
         return self.load(name)
 
-    # TODO: refactor
+    # TODO: refactor to create smaller, specific functions
     def generate_classes_metadata(self, klass: Klass):
         name = klass.name
         parent = klass.parent
@@ -246,22 +252,12 @@ class CodeGenerator:
 
         object_type = self.module.context.get_identified_type('Object')
 
-        type_map = {
-            'Cint32': Integer.as_llvm()
-        }
-
-        def get_param_type(typ):
-            if typ in type_map:
-                return type_map[typ]
-
-            return object_type
-
         for func in klass.functions:
             funk_name = f'{name}::{func.name}'
 
-            signature = [get_param_type(param.type) for param in func.params]
+            signature = [get_param_type(param.type, object_type) for param in func.params]
             if func.ret_type:
-                ret = get_param_type(func.ret_type)
+                ret = get_param_type(func.ret_type, object_type)
             else:
                 ret = ir.VoidType()
 
@@ -383,6 +379,16 @@ class CodeGenerator:
         name = f'{func}::init'
         self.call(name, [instance])
         return instance
+
+    def visit_methodcall(self, node: MethodCall):
+        var = node.instance
+
+        instance = self.get_var(var)
+        typ = self.get_var_type(var)
+
+        func = f'{typ.name}::{node.method}'
+
+        return self.call(func, [instance])
 
     def visit_print(self, node: Print):
         val = self.visit(node.val)
@@ -573,7 +579,8 @@ class CodeGenerator:
         elif isinstance(rhs, List):
             typ = List.as_llvm().as_pointer()
         elif isinstance(rhs, Call):
-            typ = Call
+            typ = self.get_klass_by_name(rhs.func)
+            return self.assign(name, value, typ, is_class=True)
         elif not isinstance(rhs, Value):
             value = self.visit(rhs)
             typ = value.type

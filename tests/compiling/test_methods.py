@@ -1,3 +1,5 @@
+from wurlitzer import pipes
+
 from opal.codegen import CodeGenerator
 from tests.helpers import get_representation, parse
 
@@ -312,21 +314,30 @@ class TestTypeMethodDeclaration:
         code.should.contain('ret i32 42')
 
 
-# class TestTypeMethodExecution:
-#     def test_generates_a_function(self, evaluator):
-#         expr = f"""
-#         class Object
-#         end
-#
-#         class Integer
-#             def do_it()
-#             end
-#         end
-#
-#         """
-#
-#         evaluator.evaluate(expr, run=True)
-#         code = str(evaluator.codegen)
-#
-#         code.should.contain('define void @"Integer::do_it"(%"Integer"* %".1")')
-#
+class TestTypeMethodExecution:
+    def test_generates_a_function(self, evaluator):
+        expr = f"""
+        
+        class Object
+        end
+        
+        class MyClass
+            def say_42()
+                return 42
+            end
+        end
+        mc = MyClass()
+        
+        forty_two = mc.say_42()
+        
+        print(forty_two)
+
+        """
+
+        with pipes() as (out, _):
+            evaluator.evaluate(expr)
+
+        out = out.read()
+
+        out.should.contain('42')
+

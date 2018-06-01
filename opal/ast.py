@@ -293,6 +293,8 @@ class Funktion(ASTNode):
     def dump(self):
         args = ','.join([arg.dump() for arg in self.params])
         ret_type = self.ret_type and f'{self.ret_type} ' or ''
+        # ret_type = self.ret_type and self.ret_type.val.__class__.__name__
+        # ret_type = ret_type and f'{ret_type} ' or ''
         name = '{0}{1}'.format(self.is_constructor and ':' or '', self.name)
         return f'({ret_type}{name}({args}) {self.body.dump()})'
 
@@ -376,6 +378,7 @@ class ASTVisitor(InlineTransformer):
     def __init__(self):
         self.classes = []
         self.functions = []
+        self.ret_val = None
         super().__init__()
 
     def add_klass(self, klass):
@@ -395,7 +398,9 @@ class ASTVisitor(InlineTransformer):
         return klass
 
     def add_funktion(self, funktion):
+        funktion.ret_type = funktion.ret_type or self.ret_val
         self.functions.append(funktion)
+        self.ret_val = None
 
     def program(self, body: Block):
         program = Program(body)
@@ -503,7 +508,9 @@ class ASTVisitor(InlineTransformer):
         return Param(name, type_ and type_.value)
 
     def ret_(self, val):
-        return Return(val)
+        ret_val = Return(val)
+        self.ret_val = ret_val
+        return ret_val
 
     def instance(self, func, args=None):
         return Call(func.val, args)
@@ -524,3 +531,18 @@ class ASTVisitor(InlineTransformer):
         if not node:  # pragma: no cover
             raise SyntaxError(f'The operation [{op}] is not supported.')  # pragma: no cover
         return node(lhs, rhs)
+
+
+type_map = {
+    'Cint32': Integer.as_llvm(),
+    Integer: Integer.as_llvm(),
+}
+
+
+def get_param_type(typ, default=None):
+    if isinstance(typ, Return):
+        typ = typ.val.__class__
+    if typ in type_map:
+        return type_map[typ]
+
+    return default
