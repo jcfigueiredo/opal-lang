@@ -282,9 +282,127 @@ class IndexOf(ASTNode):
         self.index = index
 
 
+class Funktion(ASTNode):
+    def __init__(self, name, params, body, ret_type=None, is_constructor=False):
+        self.name = name
+        self.params = params
+        self.body = body
+        self.ret_type = ret_type
+        self.is_constructor = is_constructor
+
+    def dump(self):
+        args = ','.join([arg.dump() for arg in self.params])
+        ret_type = self.ret_type and f'{self.ret_type} ' or ''
+        # ret_type = self.ret_type and self.ret_type.val.__class__.__name__
+        # ret_type = ret_type and f'{ret_type} ' or ''
+        name = '{0}{1}'.format(self.is_constructor and ':' or '', self.name)
+        return f'({ret_type}{name}({args}) {self.body.dump()})'
+
+
+class Klass(ASTNode):
+    def __init__(self, name, body: Block, parent=None):
+        self.name = name
+        self.body = body
+        self.parent = parent
+        if name != 'Object' and not parent:
+            self.parent = 'Object'
+        self.functions = []
+
+    def dump(self):
+        return f'(class {self.name}{self.body.dump()})'
+
+    def add_function(self, funktion: Funktion):
+        self.functions.append(funktion)
+
+
+class Param(ASTNode):
+    def __init__(self, name, type_):
+        self._name = name
+        self._type = type_
+
+    def dump(self):
+        type_ = self.type and f'::{self.type}' or ''
+        return f'{self.name}{type_}'
+
+    @property
+    def name(self):
+        return self._name.val
+
+    @property
+    def type(self):
+        return self._type
+
+
+class Return(ASTNode):
+    def __init__(self, val):
+        self.val = val
+
+    def dump(self):
+        return f'(Return {self.val.dump()})'
+
+
+class Call(ASTNode):
+
+    def __init__(self, func, args):
+        self.func = func
+
+        if args is None:
+            args = []
+
+        self.args = args
+
+    def dump(self):
+        args = ', '.join([arg.dump() for arg in self.args])
+        return f'{self.func}({args})'
+
+
+class MethodCall(ASTNode):
+
+    def __init__(self, instance, method, args):
+        self.instance = instance
+        self.method = method
+
+        if args is None:
+            args = []
+
+        self.args = args
+
+    def dump(self):
+        args = ', '.join([arg.dump() for arg in self.args])
+        return f'({self.instance}.{self.method} {args})'
+
+
 # noinspection PyMethodMayBeStatic
 class ASTVisitor(InlineTransformer):
-    def program(self, body):
+
+    def __init__(self):
+        self.classes = []
+        self.functions = []
+        self.ret_val = None
+        super().__init__()
+
+    def add_klass(self, klass):
+        has_constructor = False
+
+        for funktion in self.functions:
+            has_constructor |= funktion.is_constructor
+            klass.add_function(funktion)
+
+        if not has_constructor:
+            default_constructor = Funktion('init', params=[], body=Block(), is_constructor=True)
+            klass.body.statements.append(default_constructor)
+            klass.add_function(default_constructor)
+
+        self.classes.append(klass)
+        self.functions = []
+        return klass
+
+    def add_funktion(self, funktion):
+        funktion.ret_type = funktion.ret_type or self.ret_val
+        self.functions.append(funktion)
+        self.ret_val = None
+
+    def program(self, body: Block):
         program = Program(body)
         return program
 
@@ -352,8 +470,79 @@ class ASTVisitor(InlineTransformer):
     def for_(self, var, iterable, body):
         return For(var, iterable, body)
 
+    def class_(self, name, body):
+        klass = Klass(name.val, body)
+        klass = self.add_klass(klass)
+        return klass
+
+    def inherits(self, name, parent, body):
+        klass = Klass(name.val, body, parent=parent.val)
+        klass = self.add_klass(klass)
+        return klass
+
+    def def_(self, name, params, body=None):
+        if isinstance(params, Block):
+            body = params
+            params = []
+        funktion = Funktion(name.val, params, body)
+        self.add_funktion(funktion)
+        return funktion
+
+    def ctor_(self, name, params, body=None):
+        if isinstance(params, Block):
+            body = params
+            params = []
+        funktion = Funktion(name.val, params, body, is_constructor=True)
+        self.add_funktion(funktion)
+        return funktion
+
+    def typed_def(self, type_, name, params, body=None):
+        funktion = Funktion(name.val, params, body, ret_type=type_.value)
+        self.add_funktion(funktion)
+        return funktion
+
+    def params(self, *nodes):
+        return [node for node in nodes if isinstance(node, Param)]
+
+    def param(self, name, type_=None):
+        return Param(name, type_ and type_.value)
+
+    def ret_(self, val):
+        ret_val = Return(val)
+        self.ret_val = ret_val
+        return ret_val
+
+    def instance(self, func, args=None):
+        return Call(func.val, args)
+
+    def method_call(self, instance, method, args=None):
+        return MethodCall(instance.val, method.val, args)
+
+    def args(self, *args):
+        args_without_tokens = [arg for arg in args if not isinstance(arg, Token)]
+        return args_without_tokens
+
+    def arg(self, arg):
+        return arg
+
     def comp(self, lhs, op, rhs):
         node = Comparison.by(op.value)
-        if not node:
-            raise SyntaxError(f'The operation [{op}] is not supported.')
+
+        if not node:  # pragma: no cover
+            raise SyntaxError(f'The operation [{op}] is not supported.')  # pragma: no cover
         return node(lhs, rhs)
+
+
+type_map = {
+    'Cint32': Integer.as_llvm(),
+    Integer: Integer.as_llvm(),
+}
+
+
+def get_param_type(typ, default=None):
+    if isinstance(typ, Return):
+        typ = typ.val.__class__
+    if typ in type_map:
+        return type_map[typ]
+
+    return default

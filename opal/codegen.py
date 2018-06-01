@@ -1,15 +1,19 @@
+from collections import OrderedDict
 from hashlib import sha3_256
 
 # noinspection PyPackageRequirements
-from llvmlite import binding as llvm
 from llvmlite import ir as ir
 from llvmlite.ir import PointerType
 from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
 from opal import operations as ops
 from opal.ast import Program, BinaryOp, Integer, Float, String, Print, Boolean, Assign, Var, VarValue, List, IndexOf, \
-    While, If, Continue, For, Value
+    While, If, Continue, For, Value, Klass, Funktion, Return, Call, ASTVisitor, MethodCall, get_param_type
+from opal.parser import parser
 from opal.types import Int8, Any
+from resources.llvmex import CodegenError
+
+INDICES = [ir.Constant(Integer.as_llvm(), 0), ir.Constant(Integer.as_llvm(), 0)]
 
 PRIVATE_LINKAGE = 'private'
 
@@ -17,32 +21,32 @@ PRIVATE_LINKAGE = 'private'
 class CodeGenerator:
     def __init__(self):
         # TODO: come up with a less naive way of handling the symtab and types
+        self.classes = None
         self.symtab = {}
         self.typetab = {}
         self.is_break = False
+        self.current_class = None
 
         self.loop_end_blocks = []
         self.loop_cond_blocks = []
-
-        self.module = Module(name='opal-lang')
+        context = ir.Context()
+        self.module = Module(name='opal-lang', context=context)
         self.blocks = []
+        self.scope = {}
 
         self._add_builtins()
 
         func_ty = ir.FunctionType(ir.VoidType(), [])
         func = Function(self.module, func_ty, 'main')
-        entry_block = func.append_basic_block('entry')
-        exit_block = func.append_basic_block('exit')
 
         self.current_function = func
+        entry_block = self.add_block('entry')
+        exit_block = self.add_block('exit')
+
         self.function_stack = [func]
         self.builder = Builder(entry_block)
         self.exit_blocks = [exit_block]
         self.block_stack = [entry_block]
-
-        llvm.initialize()
-        llvm.initialize_native_target()
-        llvm.initialize_native_asmprinter()
 
     def __str__(self):
         return str(self.module)
@@ -96,7 +100,11 @@ class CodeGenerator:
     def add_block(self, name):
         return self.current_function.append_basic_block(name)
 
-    def assign(self, name, value, typ):
+    def assign(self, name, value, typ, is_class=False):
+        if is_class:
+            self.symtab[name] = value
+            self.typetab[name] = typ
+            return value
 
         old_val = self.symtab.get(name)
         if old_val:
@@ -109,6 +117,12 @@ class CodeGenerator:
         self.symtab[name] = var_address
         self.typetab[name] = typ
         return var_address
+
+    def get_var(self, name):
+        return self.symtab[name]
+
+    def get_var_type(self, name):
+        return self.typetab[name]
 
     # noinspection SpellCheckingInspection
     def bitcast(self, value, type_):
@@ -124,9 +138,16 @@ class CodeGenerator:
     def gep(self, ptr, indices, inbounds=False, name=''):
         return self.builder.gep(ptr, indices, inbounds, name)
 
-    def generate_code(self, node):
-        assert isinstance(node, Program)
-        return self.visit(node)
+    def generate_code(self, code):
+        visitor = ASTVisitor()
+        ast = visitor.transform(parser.parse(f"{code}\n"))
+        self.classes = visitor.classes
+
+        for klass in self.classes:
+            self.generate_classes_metadata(klass)
+
+        assert isinstance(ast, Program)
+        return self.visit(ast)
 
     def load(self, ptr, name=''):
         return self.builder.load(ptr, name)
@@ -137,14 +158,13 @@ class CodeGenerator:
     def select(self, val, true, false):
         return self.builder.select(val, true, false)
 
-    def insert_const_string(self, string):
+    @staticmethod
+    def insert_const_string(module, string):
         text = Constant.stringz(string)
-        name = self.get_string_name(string)
-        # Try to reuse existing global
-        gv = self.module.globals.get(name)
+        name = CodeGenerator.get_string_name(string)
+        gv = module.globals.get(name)
         if gv is None:
-            # Not defined yet
-            gv = self.builder.module.add_global_variable(text.type, name=name)
+            gv = module.add_global_variable(text.type, name=name)
             gv.linkage = PRIVATE_LINKAGE
             gv.unnamed_addr = True
             gv.global_constant = True
@@ -160,12 +180,11 @@ class CodeGenerator:
         return '_'.join(['str', str(m.hexdigest())])
 
     def call(self, name, args):
-        if isinstance(name, str):
-            func = self.module.get_global(name)
-        else:
-            func = self.module.get_global(name.name)
+        func = self.module.get_global(name)
+
         if func is None:
             raise TypeError('Calling non existing function')
+
         return self.builder.call(func, args)
 
     def const(self, val):
@@ -205,7 +224,7 @@ class CodeGenerator:
         return getattr(self, method, self.generic_codegen)(node)
 
     def visit_string(self, node):
-        return self.insert_const_string(node.val)
+        return self.insert_const_string(self.module, node.val)
 
     # noinspection PyMethodMayBeStatic
     # TODO: review this to codegen instead of returning an ASTNode
@@ -216,6 +235,160 @@ class CodeGenerator:
     def visit_varvalue(self, node):
         name = self.symtab[node.val]
         return self.load(name)
+
+    # TODO: refactor to create smaller, specific functions
+    def generate_classes_metadata(self, klass: Klass):
+        name = klass.name
+        parent = klass.parent
+
+        if name != 'Object' and parent not in [c.name for c in self.classes]:
+            raise CodegenError(f'Parent class {parent} not defined')
+        vtable_typ_name = f"{name}_vtable_type"
+        vtable_typ = self.module.context.get_identified_type(vtable_typ_name)
+        type_ = self.module.context.get_identified_type(name)
+
+        funk_types = OrderedDict()
+        funktions = OrderedDict()
+
+        object_type = self.module.context.get_identified_type('Object')
+
+        for func in klass.functions:
+            funk_name = f'{name}::{func.name}'
+
+            signature = [get_param_type(param.type, object_type) for param in func.params]
+            if func.ret_type:
+                ret = get_param_type(func.ret_type, object_type)
+            else:
+                ret = ir.VoidType()
+
+            func_ty = ir.FunctionType(ret, [type_.as_pointer()] + signature)
+            funk_types[funk_name] = func_ty
+            funk = Function(self.module, func_ty, funk_name)
+            funktions[funk_name] = funk
+
+        vtable_name = f"{name}_vtable"
+
+        vtable_elements = [el.type for el in funktions.values()]
+
+        vtable_type_name = f"{parent}_vtable_type"
+
+        parent_type = \
+            parent and self.module.context.get_identified_type(vtable_type_name) or vtable_typ
+
+        vtable_elements.insert(0, parent_type.as_pointer())
+        vtable_elements.insert(1, ir.IntType(8).as_pointer())
+        vtable_typ.set_body(*vtable_elements)
+
+        # --
+        class_string = CodeGenerator.insert_const_string(self.module, name)
+        if klass.parent:
+            parent_table_typ = self.module.context.get_identified_type(f"{parent}_vtable_type")
+            vtable_constant = ir.Constant(parent_table_typ.as_pointer(),
+                                          self.module.get_global(f'{parent}_vtable').get_reference())
+        else:
+            vtable_constant = ir.Constant(vtable_typ.as_pointer(), None)
+
+        fields = [
+            vtable_constant,
+            class_string.gep(INDICES)
+        ]
+
+        fields += [ir.Constant(item.type, item.get_reference()) for item in funktions.values()]
+
+        vtable = self.module.add_global_variable(vtable_typ, name=vtable_name)
+        vtable.linkage = PRIVATE_LINKAGE
+        vtable.unnamed_addr = False
+        vtable.global_constant = True
+        vtable.initializer = vtable_typ(
+            fields
+        )
+
+        type_ = self.module.context.get_identified_type(name)
+
+        elements = []
+        elements.insert(0, vtable_typ.as_pointer())
+        type_.set_body(*elements)
+
+    def visit_klass(self, node: Klass):
+        self.current_class = node
+        body = self.visit(node.body)
+
+        self.current_class = None
+        return body
+
+    def get_function_names(self):
+        return [f.name for f in self.module.functions]
+
+    def visit_funktion(self, node: Funktion):
+        klass = self.current_class
+
+        method_name = f'{klass.name}::{node.name}'
+
+        func = list(filter(lambda f: f.name == method_name, self.module.functions))[0]
+
+        self.function_stack.append(func)
+
+        old_func = self.current_function
+        old_builder = self.builder
+        self.current_function = func
+        entry_block = self.add_block('entry')
+        exit_block = self.add_block('exit')
+        self.exit_blocks.append(exit_block)
+        self.builder = Builder(entry_block)
+
+        if node.is_constructor:
+            this = self.gep(func.args[0], INDICES)
+            self.builder.store(self.module.get_global(f'{klass.name}_vtable'), this)
+
+        body = node.body
+        if body:
+            ret = self.visit(body)
+        else:
+            ret = None
+
+        self.branch(exit_block)
+
+        if not ret:
+            self.position_at_end(exit_block)
+            self.builder.ret_void()
+
+        self.current_function = old_func
+        self.builder = old_builder
+        self.exit_blocks.pop()
+        self.function_stack.pop()
+
+        return func
+
+    def visit_return(self, node: Return):
+        previous_block = self.builder.block
+        self.position_at_end(self.exit_blocks[-1])
+        ret = self.builder.ret(self.visit(node.val))
+        self.position_at_end(previous_block)
+        return ret
+
+    def visit_call(self, node: Call):
+        func = node.func
+
+        klass = self.get_klass_by_name(name=func)
+
+        klass_name = klass.name
+        klass_type = self.module.context.get_identified_type(klass_name)
+
+        instance = self.alloc(klass_type, name=klass_name.lower())
+
+        name = f'{func}::init'
+        self.call(name, [instance])
+        return instance
+
+    def visit_methodcall(self, node: MethodCall):
+        var = node.instance
+
+        instance = self.get_var(var)
+        typ = self.get_var_type(var)
+
+        func = f'{typ.name}::{node.method}'
+
+        return self.call(func, [instance])
 
     def visit_print(self, node: Print):
         val = self.visit(node.val)
@@ -246,7 +419,7 @@ class CodeGenerator:
 
             buffer = self.alloc(ir.ArrayType(Int8.as_llvm(), 10))
 
-            buffer_ptr = self.gep(buffer, [self.const(0), self.const(0)], inbounds=True)
+            buffer_ptr = self.gep(buffer, INDICES, inbounds=True)
 
             self.call('int_to_string', [number_ptr, buffer_ptr, (self.const(10))])
 
@@ -255,7 +428,7 @@ class CodeGenerator:
 
         if typ is Float:
             percent_g = self.visit_string(String('%g\n'))
-            percent_g = self.gep(percent_g, [self.const(0), self.const(0)])
+            percent_g = self.gep(percent_g, INDICES)
 
             value = percent_g
             type_ = Int8.as_llvm().as_pointer()
@@ -264,10 +437,11 @@ class CodeGenerator:
             return
 
         if typ is Boolean:
-            true = self.insert_const_string('true')
-            true = self.gep(true, [self.const(0), self.const(0)])
-            false = self.insert_const_string('false')
-            false = self.gep(false, [self.const(0), self.const(0)])
+            mod = self.module
+            true = self.insert_const_string(mod, 'true')
+            true = self.gep(true, INDICES)
+            false = self.insert_const_string(mod, 'false')
+            false = self.gep(false, INDICES)
 
             if hasattr(val, 'constant'):
                 if val.constant:
@@ -404,6 +578,9 @@ class CodeGenerator:
             typ = value.type
         elif isinstance(rhs, List):
             typ = List.as_llvm().as_pointer()
+        elif isinstance(rhs, Call):
+            typ = self.get_klass_by_name(rhs.func)
+            return self.assign(name, value, typ, is_class=True)
         elif not isinstance(rhs, Value):
             value = self.visit(rhs)
             typ = value.type
@@ -480,3 +657,8 @@ class CodeGenerator:
             return self.builder.fcmp_ordered('!=', result, self.const(0.0))
 
         raise NotImplementedError('Unsupported cast')
+
+    def get_klass_by_name(self, name):
+        for klass in self.classes:
+            if klass.name == name:
+                return klass

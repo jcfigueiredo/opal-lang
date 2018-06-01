@@ -85,7 +85,7 @@ class TestListExecution:
         """
 
         evaluator.evaluate(expr, run=False)
-        print(evaluator.llvm_mod)
+
         str(evaluator.llvm_mod).should.contain('call void @vector_init({ i32, i32, i8** }* %.2)')
         str(evaluator.llvm_mod).should.contain('call void @vector_append({ i32, i32, i8** }* %.2, i8* %.4)')
         str(evaluator.llvm_mod).should.contain('call void @vector_append({ i32, i32, i8** }* %.2, i8* %.6)')
