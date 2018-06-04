@@ -7,7 +7,7 @@ from llvmlite.ir import PointerType
 from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
 from opal import operations as ops
-from opal.ast import Program, BinaryOp, Integer, Float, String, Print, Boolean, Assign, Var, VarValue, List, IndexOf, \
+from opal.ast.core import Program, BinaryOp, Integer, Float, String, Print, Boolean, Assign, Var, VarValue, List, IndexOf, \
     While, If, Continue, For, Value, Klass, Funktion, Return, Call, ASTVisitor, MethodCall, get_param_type
 from opal.parser import parser
 from opal.types import Int8, Any

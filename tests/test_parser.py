@@ -1,4 +1,4 @@
-from opal.ast import Integer, Add, Sub, Mul, Div, String, Print, Float, ASTVisitor
+from opal.ast.core import Integer, Add, Sub, Mul, Div, String, Print, Float, ASTVisitor
 from opal.parser import parser
 
 
