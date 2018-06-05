@@ -1,7 +1,9 @@
 from llvmlite import ir
 
-from opal.ast.core import Program, Add, Integer, Block, Mul, LogicError, Float, String, Print, Comparison, Equals, Unequals, \
+from opal.ast.core import Add, Integer, Mul, Float, String, Print, Comparison, Equals, Unequals, \
     GreaterThan, LessThan, Sub, Div, Arithmetic, BinaryOp, GreaterThanEqual, LessThanEqual
+from opal.ast import LogicError
+from opal.ast.program import Program, Block
 from tests.helpers import parse
 
 
@@ -38,9 +40,9 @@ class TestDumpingExpressions:
 
     def test_works_for_bool_consts(self):
         prog = parse("true")
-        prog.dump().should.contain('(Block\n  (Boolean true))')
+        prog.dump().should.contain('(Block\n  (Bool true))')
         prog = parse("false")
-        prog.dump().should.contain('(Block\n  (Boolean false))')
+        prog.dump().should.contain('(Block\n  (Bool false))')
 
     def test_works_for_binops(self):
         prog = parse("1 + 2")

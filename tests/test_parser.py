@@ -5,7 +5,7 @@ from opal.parser import parser
 def parse(expr, only_statements=True):
     """
     Process some src code and returns the first statement of the Program
-    :param only_statements: Boolean.
+    :param only_statements: Bool.
     :param expr: src code
     :return: Integer ast Node
     """

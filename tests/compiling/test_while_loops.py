@@ -48,7 +48,7 @@ class TestWhileLoopAST:
         end
         """
         prog = parse(expr)
-        prog.dump().should.contain(f'(Program\n  (Block\n  While((Boolean true)) '
+        prog.dump().should.contain(f'(Program\n  (Block\n  While((Bool true)) '
                                    f'(Block\n  (Print (String {string})))))')
 
     def test_has_representation_for_breaks(self):
@@ -59,7 +59,7 @@ class TestWhileLoopAST:
         end
         """
         prog = parse(expr)
-        prog.dump().should.contain(f'(Program\n  (Block\n  While((Boolean true)) '
+        prog.dump().should.contain(f'(Program\n  (Block\n  While((Bool true)) '
                                    f'(Block\n  Break)))')
 
     def test_has_representation_for_continue(self):
@@ -70,7 +70,7 @@ class TestWhileLoopAST:
         end
         """
         prog = parse(expr)
-        prog.dump().should.contain(f'(Program\n  (Block\n  While((Boolean true)) '
+        prog.dump().should.contain(f'(Program\n  (Block\n  While((Bool true)) '
                                    f'(Block\n  Continue)))')
 
 

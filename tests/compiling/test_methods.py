@@ -123,7 +123,7 @@ class TestTypeMethodDeclarationAST:
         end
         """
         prog = parse(expr)
-        prog.dump().should.contain('(class Integer(Block\n  (do_it(val) (Block\n  (Boolean true)')
+        prog.dump().should.contain('(class Integer(Block\n  (do_it(val) (Block\n  (Bool true)')
 
     def test_has_a_representation_for_multiple_args(self):
         expr = """
@@ -134,7 +134,7 @@ class TestTypeMethodDeclarationAST:
         end
         """
         prog = parse(expr)
-        prog.dump().should.contain('(class Integer(Block\n  (do_it(val,other) (Block\n  (Boolean true)')
+        prog.dump().should.contain('(class Integer(Block\n  (do_it(val,other) (Block\n  (Bool true)')
 
     def test_has_a_representation_for_no_args(self):
         expr = """
@@ -145,7 +145,7 @@ class TestTypeMethodDeclarationAST:
         end
         """
         prog = parse(expr)
-        prog.dump().should.contain('(class Integer(Block\n  (do_it() (Block\n  (Boolean true)')
+        prog.dump().should.contain('(class Integer(Block\n  (do_it() (Block\n  (Bool true)')
 
     def test_has_a_representation_for_typed_args(self):
         expr = """
@@ -156,7 +156,7 @@ class TestTypeMethodDeclarationAST:
         end
         """
         prog = parse(expr)
-        prog.dump().should.contain('(class Integer(Block\n  (do_it(val::Cint32) (Block\n  (Boolean true)')
+        prog.dump().should.contain('(class Integer(Block\n  (do_it(val::Cint32) (Block\n  (Bool true)')
 
     def test_has_a_representation_for_returning_type(self):
         expr = """
@@ -167,7 +167,7 @@ class TestTypeMethodDeclarationAST:
         end
         """
         prog = parse(expr)
-        prog.dump().should.contain('(class Integer(Block\n  (Cint32 do_it(val::Cint32) (Block\n  (Boolean true)')
+        prog.dump().should.contain('(class Integer(Block\n  (Cint32 do_it(val::Cint32) (Block\n  (Bool true)')
 
     def test_has_a_representation_for_returns(self):
         expr = """

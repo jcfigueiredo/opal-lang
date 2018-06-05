@@ -79,7 +79,7 @@ class TestIfStatementsAST:
         end
         """
         prog = parse(expr)
-        prog.dump().should.contain('(Program\n  (Block\n  If((Boolean true)) Then((Block\n  (= a 10.5))))))')
+        prog.dump().should.contain('(Program\n  (Block\n  If((Bool true)) Then((Block\n  (= a 10.5))))))')
 
     def test_works_for_if_then_else_conditionals(self):
         expr = """
@@ -90,7 +90,7 @@ class TestIfStatementsAST:
         end
         """
         prog = parse(expr)
-        prog.dump().should.be.equal('(Program\n  (Block\n  If((Boolean false)) '
+        prog.dump().should.be.equal('(Program\n  (Block\n  If((Bool false)) '
                                     'Then((Block\n  (= a "right")))) '
                                     'Else((Block\n  (= b "wrong")))))')
 

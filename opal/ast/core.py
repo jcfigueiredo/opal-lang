@@ -1,69 +1,17 @@
 # AST hierarchy
 
 
-from operator import eq
 from typing import Iterable
 
 from lark import InlineTransformer
 from lark.lexer import Token
 
-from opal import types
+from opal.ast import ASTNode, Value, LogicError, types
+from opal.ast.conditionals import If
+from opal.ast.program import Program, Block
+from opal.ast.terminals import Continue
+from opal.ast.types import Bool
 from opal.plugin import Plugin
-
-
-# noinspection PyAbstractClass
-class LogicError(Exception):
-    pass
-
-
-class ASTNode:
-
-    def dump(self):
-        raise NotImplementedError
-
-
-# noinspection PyAbstractClass
-class Program(ASTNode):
-
-    def __init__(self, block=None):
-        self.block = block and block or Block()
-
-    def __eq__(self, o):
-        return self.block.__eq__(o.block)
-
-    def dump(self):
-        s = f"({self.__class__.__name__}\n  {self.block.dump()})"
-        return s
-
-
-class Block(ASTNode):
-
-    def __init__(self, body=None):
-        if isinstance(body, list):
-            self._statements = body
-            return
-
-        self._statements = []
-        if body:
-            self._statements.append(body)
-
-    def __eq__(self, o):
-        return any(map(eq, self.statements, o.statements))
-
-    @property
-    def statements(self):
-        return self._statements
-
-    def dump(self):
-        stmts = '\n'.join([stmt.dump() for stmt in self._statements])
-
-        s = f"({self.__class__.__name__}\n  {stmts})"
-        return s
-
-
-# noinspection PyAbstractClass
-class ExprAST(ASTNode):
-    pass
 
 
 class BinaryOp(ASTNode, metaclass=Plugin):
@@ -90,19 +38,6 @@ class BinaryOp(ASTNode, metaclass=Plugin):
         return f'({self.op} {left} {right})'
 
 
-class If(ASTNode):
-
-    def __init__(self, cond, then_, else_=None):
-        self.cond = cond
-        self.then_ = then_
-        self.else_ = else_
-
-    def dump(self):
-        else_ = self.else_ and f' Else({self.else_.dump()})' or ''
-        s = f'If({self.cond.dump()}) Then({self.then_.dump()})){else_}'
-        return s
-
-
 class While(ASTNode):
 
     def __init__(self, cond, body):
@@ -127,11 +62,6 @@ class For(ASTNode):
 class Break(ASTNode):
     def dump(self):
         return 'Break'
-
-
-class Continue(ASTNode):
-    def dump(self):
-        return 'Continue'
 
 
 class Assign(BinaryOp):
@@ -187,22 +117,6 @@ class Unequals(Comparison):
 
 
 # noinspection PyAbstractClass
-class Value(ExprAST):
-    val = None
-
-    def __eq__(self, o):
-        other_val = o.val if isinstance(o, Value) else o
-        if not isinstance(o, Value):
-            raise LogicError(f'You can\'t compare a Value and {o.__class__.__name__}.'
-                             f'\nTokens being compared:\n{self.dump()}\n{other_val}')
-        # noinspection PyUnresolvedReferences
-        if self.__class__ != o.__class__:
-            return False
-
-        return self.val == o.val
-
-    def dump(self):
-        return f'({self.__class__.__name__} {self.val})'
 
 
 class Print(Value, types.Any):
@@ -219,14 +133,6 @@ class Print(Value, types.Any):
 
 class Void(types.Any):
     pass
-
-
-class Boolean(Value, types.Boolean):
-    def __init__(self, val):
-        self.val = bool(val)
-
-    def dump(self):
-        return f'({self.__class__.__name__} {str(self.val).lower()})'
 
 
 class Integer(Value, types.Int):
@@ -459,7 +365,7 @@ class ASTVisitor(InlineTransformer):
         return IndexOf(lst=list_, index=index)
 
     def boolean(self, const):
-        return Boolean(const.value == 'true')
+        return Bool(const.value == 'true')
 
     def if_(self, cond, then_, else_=None):
         return If(cond, then_, else_)

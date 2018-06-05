@@ -74,7 +74,7 @@ class TestListsAST:
 
     def test_works_for_items_of_different_types(self):
         prog = parse("[10, \"20\", true]")
-        prog.dump().should.contain('(Block\n  [(Integer 10), (String 20), (Boolean true)])')
+        prog.dump().should.contain('(Block\n  [(Integer 10), (String 20), (Bool true)])')
 
 
 class TestListExecution:

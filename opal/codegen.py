@@ -7,10 +7,12 @@ from llvmlite.ir import PointerType
 from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
 from opal import operations as ops
-from opal.ast.core import Program, BinaryOp, Integer, Float, String, Print, Boolean, Assign, Var, VarValue, List, IndexOf, \
-    While, If, Continue, For, Value, Klass, Funktion, Return, Call, ASTVisitor, MethodCall, get_param_type
+from opal.ast import ASTNode, Value
+from opal.ast.core import BinaryOp, Integer, Float, String, Print, Assign, Var, VarValue, List, \
+    IndexOf, While, For, Klass, Funktion, Return, Call, ASTVisitor, MethodCall, get_param_type
+from opal.ast.program import Program
 from opal.parser import parser
-from opal.types import Int8, Any
+from opal.ast.types import Int8, Any, Bool
 from resources.llvmex import CodegenError
 
 INDICES = [ir.Constant(Integer.as_llvm(), 0), ir.Constant(Integer.as_llvm(), 0)]
@@ -89,14 +91,6 @@ class CodeGenerator:
         self.builder.store(val, var_addr)
         return var_addr
 
-    # def alloc_assign_store(self, name, val, typ):
-    #     current_block = self.builder.block
-    #     var_addr = self.builder.alloca(typ, name=name)
-    #     self.assign(name, var_addr, typ)
-    #     self.builder.position_at_end(current_block)
-    #     self.builder.store(val, var_addr)
-    #     return var_addr
-
     def add_block(self, name):
         return self.current_function.append_basic_block(name)
 
@@ -147,7 +141,7 @@ class CodeGenerator:
             self.generate_classes_metadata(klass)
 
         assert isinstance(ast, Program)
-        return self.visit(ast)
+        return ast.accept(self)
 
     def load(self, ptr, name=''):
         return self.builder.load(ptr, name)
@@ -190,7 +184,7 @@ class CodeGenerator:
     def const(self, val):
         # has to come first because freaking `isinstance(True, int) == True`
         if isinstance(val, bool):
-            return ir.Constant(Boolean.as_llvm(), val and 1 or 0)
+            return ir.Constant(Bool.as_llvm(), val and 1 or 0)
         if isinstance(val, int):
             return ir.Constant(Integer.as_llvm(), val)
         if isinstance(val, float):
@@ -202,15 +196,21 @@ class CodeGenerator:
     def generic_codegen(node):
         raise NotImplementedError('No visit_{} method'.format(type(node).__name__.lower()))
 
-    def visit(self, node):
+    def visit(self, node: ASTNode):
         """
         Dynamically invoke the code generator for each specific node
         :param node: ASTNode
         """
+
+        can_code_gen = hasattr(node, 'code')
+        if can_code_gen:
+            # noinspection PyUnresolvedReferences
+            return node.code(codegen=self)
+
         if self.is_break:
             return
 
-        if isinstance(node, Integer) or isinstance(node, Float) or isinstance(node, Boolean):
+        if isinstance(node, Integer) or isinstance(node, Float) or isinstance(node, Bool):
             return self.visit_value(node)
 
         method = 'visit_' + type(node).__name__.lower()
@@ -402,8 +402,8 @@ class CodeGenerator:
             typ = Integer
         elif isinstance(node.val, Float) or val.type is Float.as_llvm():
             typ = Float
-        elif isinstance(node.val, Boolean) or val.type is Boolean.as_llvm():
-            typ = Boolean
+        elif isinstance(node.val, Bool) or val.type is Bool.as_llvm():
+            typ = Bool
 
         if typ is String:
             # Cast to a i8* pointer
@@ -436,7 +436,7 @@ class CodeGenerator:
             self.call('printf', [percent_g, val])
             return
 
-        if typ is Boolean:
+        if typ is Bool:
             mod = self.module
             true = self.insert_const_string(mod, 'true')
             true = self.gep(true, INDICES)
@@ -456,40 +456,6 @@ class CodeGenerator:
             return
 
         raise NotImplementedError(f'can\'t print {node.val}')
-
-    def visit_if(self, node: If):
-
-        start_block = self.add_block('if.start')
-        self.branch(start_block)
-        self.position_at_end(start_block)
-
-        if_true_block = self.add_block('if.true')
-        end_block = self.add_block('if.end')
-
-        cond = self.visit(node.cond)
-
-        if cond.type != Boolean.as_llvm():
-            cond = self.cast(cond, Boolean)
-
-        if_false_block = end_block
-
-        if node.else_:
-            if_false_block = self.add_block('if.false')
-
-        self.cbranch(cond, if_true_block, if_false_block)
-
-        self.position_at_end(if_true_block)
-
-        self.visit(node.then_)
-
-        self.branch(end_block)
-
-        if node.else_:
-            self.position_at_end(if_false_block)
-            self.visit(node.else_)
-            self.branch(end_block)
-
-        self.position_at_end(end_block)
 
     def visit_while(self, node: While):
 
@@ -624,34 +590,15 @@ class CodeGenerator:
         raise NotImplementedError(f'The operation _{op}_ is nor support for Binary Operations.')
 
     # noinspection PyMethodMayBeStatic
-    def visit_block(self, node):
-        ret = None
-        for stmt in node.statements:
-            # TODO: This won't work but keeping this for now
-            if isinstance(stmt, Continue):
-                return
-            temp = self.visit(stmt)
-            if temp:
-                ret = temp
-        return ret
-
-    # noinspection PyPep8Naming
-    def visit_program(self, node):
-        self.visit(node.block)
-        self.branch(self.exit_blocks[0])
-        self.position_at_end(self.exit_blocks[0])
-        self.builder.ret_void()
-
-    # noinspection PyMethodMayBeStatic
     def visit_value(self, node):
         return self.const(node.val)
 
     def cast(self, from_, to):
-        if from_.type == Integer.as_llvm() and to is Boolean:
+        if from_.type == Integer.as_llvm() and to is Bool:
             result = self.alloc_and_store(from_, Integer.as_llvm())
             result = self.load(result)
             return self.builder.icmp_signed('!=', result, self.const(0))
-        if from_.type == Float.as_llvm() and to is Boolean:
+        if from_.type == Float.as_llvm() and to is Bool:
             result = self.alloc_and_store(from_, Float.as_llvm())
             result = self.load(result)
             return self.builder.fcmp_ordered('!=', result, self.const(0.0))
