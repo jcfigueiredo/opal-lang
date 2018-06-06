@@ -8,14 +8,13 @@ from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
 from opal import operations as ops
 from opal.ast import ASTNode, Value
-from opal.ast.core import BinaryOp, Integer, Float, String, Print, Assign, Var, VarValue, List, \
-    IndexOf, While, For, Klass, Funktion, Return, Call, ASTVisitor, MethodCall, get_param_type
+from opal.ast.core import BinaryOp, Print, Assign, Var, VarValue, ASTVisitor, get_param_type
 from opal.ast.program import Program
+from opal.ast.types import Int8, Any, Bool, Integer, List, Float, String, Klass, Funktion, Call, MethodCall
 from opal.parser import parser
-from opal.ast.types import Int8, Any, Bool
 from resources.llvmex import CodegenError
 
-INDICES = [ir.Constant(Integer.as_llvm(), 0), ir.Constant(Integer.as_llvm(), 0)]
+INDICES = [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)]
 
 PRIVATE_LINKAGE = 'private'
 
@@ -210,9 +209,6 @@ class CodeGenerator:
         if self.is_break:
             return
 
-        if isinstance(node, Integer) or isinstance(node, Float) or isinstance(node, Bool):
-            return self.visit_value(node)
-
         method = 'visit_' + type(node).__name__.lower()
 
         if isinstance(node, BinaryOp):
@@ -222,9 +218,6 @@ class CodeGenerator:
             return self.visit_binop(node)
 
         return getattr(self, method, self.generic_codegen)(node)
-
-    def visit_string(self, node):
-        return self.insert_const_string(self.module, node.val)
 
     # noinspection PyMethodMayBeStatic
     # TODO: review this to codegen instead of returning an ASTNode
@@ -241,8 +234,11 @@ class CodeGenerator:
         name = klass.name
         parent = klass.parent
 
-        if name != 'Object' and parent not in [c.name for c in self.classes]:
+        undefined_parent_class = name != 'Object' and parent not in [c.name for c in self.classes]
+
+        if undefined_parent_class:
             raise CodegenError(f'Parent class {parent} not defined')
+
         vtable_typ_name = f"{name}_vtable_type"
         vtable_typ = self.module.context.get_identified_type(vtable_typ_name)
         type_ = self.module.context.get_identified_type(name)
@@ -309,87 +305,6 @@ class CodeGenerator:
         elements.insert(0, vtable_typ.as_pointer())
         type_.set_body(*elements)
 
-    def visit_klass(self, node: Klass):
-        self.current_class = node
-        body = self.visit(node.body)
-
-        self.current_class = None
-        return body
-
-    def get_function_names(self):
-        return [f.name for f in self.module.functions]
-
-    def visit_funktion(self, node: Funktion):
-        klass = self.current_class
-
-        method_name = f'{klass.name}::{node.name}'
-
-        func = list(filter(lambda f: f.name == method_name, self.module.functions))[0]
-
-        self.function_stack.append(func)
-
-        old_func = self.current_function
-        old_builder = self.builder
-        self.current_function = func
-        entry_block = self.add_block('entry')
-        exit_block = self.add_block('exit')
-        self.exit_blocks.append(exit_block)
-        self.builder = Builder(entry_block)
-
-        if node.is_constructor:
-            this = self.gep(func.args[0], INDICES)
-            self.builder.store(self.module.get_global(f'{klass.name}_vtable'), this)
-
-        body = node.body
-        if body:
-            ret = self.visit(body)
-        else:
-            ret = None
-
-        self.branch(exit_block)
-
-        if not ret:
-            self.position_at_end(exit_block)
-            self.builder.ret_void()
-
-        self.current_function = old_func
-        self.builder = old_builder
-        self.exit_blocks.pop()
-        self.function_stack.pop()
-
-        return func
-
-    def visit_return(self, node: Return):
-        previous_block = self.builder.block
-        self.position_at_end(self.exit_blocks[-1])
-        ret = self.builder.ret(self.visit(node.val))
-        self.position_at_end(previous_block)
-        return ret
-
-    def visit_call(self, node: Call):
-        func = node.func
-
-        klass = self.get_klass_by_name(name=func)
-
-        klass_name = klass.name
-        klass_type = self.module.context.get_identified_type(klass_name)
-
-        instance = self.alloc(klass_type, name=klass_name.lower())
-
-        name = f'{func}::init'
-        self.call(name, [instance])
-        return instance
-
-    def visit_methodcall(self, node: MethodCall):
-        var = node.instance
-
-        instance = self.get_var(var)
-        typ = self.get_var_type(var)
-
-        func = f'{typ.name}::{node.method}'
-
-        return self.call(func, [instance])
-
     def visit_print(self, node: Print):
         val = self.visit(node.val)
         typ = None
@@ -427,7 +342,7 @@ class CodeGenerator:
             return
 
         if typ is Float:
-            percent_g = self.visit_string(String('%g\n'))
+            percent_g = String('%g\n').code(self)
             percent_g = self.gep(percent_g, INDICES)
 
             value = percent_g
@@ -457,82 +372,6 @@ class CodeGenerator:
 
         raise NotImplementedError(f'can\'t print {node.val}')
 
-    def visit_while(self, node: While):
-
-        cond_block = self.add_block('while.cond')
-        body_block = self.add_block('while.body')
-
-        self.loop_cond_blocks.append(cond_block)
-        end_block = self.add_block('while.end')
-        self.loop_end_blocks.append(end_block)
-
-        self.branch(cond_block)
-        self.position_at_end(cond_block)
-
-        cond = self.visit(node.cond)
-        self.cbranch(cond, body_block, end_block)
-        self.position_at_end(body_block)
-
-        self.visit(node.body)
-
-        if not self.is_break:
-            self.branch(cond_block)
-        else:
-            self.is_break = False
-
-        self.position_at_end(end_block)
-        self.loop_end_blocks.pop()
-        self.loop_cond_blocks.pop()
-
-    def visit_for(self, node: For):
-        init_block = self.add_block('for.init')
-        cond_block = self.add_block('for.cond')
-        self.loop_cond_blocks.append(cond_block)
-
-        body_block = self.add_block('for.body')
-        end_block = self.add_block('for.end')
-        self.loop_end_blocks.append(end_block)
-
-        self.branch(init_block)
-        self.position_at_end(init_block)
-        vector = self.visit(node.iterable)
-
-        size = self.call('vector_size', [vector])
-
-        size = self.alloc_and_store(size, Integer.as_llvm(), name='size')
-        index = self.alloc_and_store(self.const(0), Integer.as_llvm(), 'index')
-
-        self.branch(cond_block)
-        self.position_at_end(cond_block)
-
-        should_go_on = self.builder.icmp_signed('<', self.load(index), self.load(size))
-
-        self.cbranch(should_go_on, body_block, end_block)
-
-        self.position_at_end(body_block)
-
-        pos = self.load(index)
-
-        val = self.visit_vector(vector, pos)
-
-        self.assign(node.var.val, val, Integer.as_llvm())
-
-        self.visit(node.body)
-
-        if not self.is_break:
-            self.builder.store(self.builder.add(self.const(1), pos), index)
-            self.branch(cond_block)
-        else:
-            self.is_break = False
-
-        self.position_at_end(end_block)
-        self.loop_end_blocks.pop()
-        self.loop_cond_blocks.pop()
-
-    def visit_break(self, _):
-        self.is_break = True
-        return self.branch(self.loop_end_blocks[-1])
-
     def visit_assign(self, node: Assign):
         left = self.visit(node.lhs)
         rhs = node.rhs
@@ -556,20 +395,6 @@ class CodeGenerator:
         var_address = self.assign(name, value, typ)
         return var_address
 
-    def visit_list(self, node: List):
-        vector = self.alloc(List.as_llvm())
-        self.call('vector_init', [vector])
-        for item in node.items:
-            val = self.visit(item)
-            self.call('vector_append', [vector, self.builder.inttoptr(val, Int8.as_llvm().as_pointer())])
-        return vector
-
-    def visit_indexof(self, node: IndexOf):
-        index = self.visit(node.index)
-        vector = self.visit(node.lst)
-        val = self.visit_vector(vector, index)
-        return val
-
     def visit_vector(self, vector, index):
         val = self.call('vector_get', [vector, index])
         val = self.builder.ptrtoint(val, Integer.as_llvm())
@@ -588,10 +413,6 @@ class CodeGenerator:
             return ops.float_ops(self.builder, left, right, node)
 
         raise NotImplementedError(f'The operation _{op}_ is nor support for Binary Operations.')
-
-    # noinspection PyMethodMayBeStatic
-    def visit_value(self, node):
-        return self.const(node.val)
 
     def cast(self, from_, to):
         if from_.type == Integer.as_llvm() and to is Bool:

@@ -1,16 +1,16 @@
 # AST hierarchy
 
 
-from typing import Iterable
-
 from lark import InlineTransformer
 from lark.lexer import Token
 
 from opal.ast import ASTNode, Value, LogicError, types
 from opal.ast.conditionals import If
+from opal.ast.iterators import IndexOf
+from opal.ast.loops import While, For
 from opal.ast.program import Program, Block
-from opal.ast.terminals import Continue
-from opal.ast.types import Bool
+from opal.ast.terminals import Continue, Break, Return
+from opal.ast.types import Bool, Integer, List, Float, String, Klass, Funktion, Param, Call, MethodCall
 from opal.plugin import Plugin
 
 
@@ -36,32 +36,6 @@ class BinaryOp(ASTNode, metaclass=Plugin):
         if isinstance(self.rhs, String):
             right = f'"{right}"'
         return f'({self.op} {left} {right})'
-
-
-class While(ASTNode):
-
-    def __init__(self, cond, body):
-        self.cond = cond
-        self.body = body
-
-    def dump(self):
-        return f'While({self.cond.dump()}) {self.body.dump()}'
-
-
-class For(ASTNode):
-
-    def __init__(self, var, iterable, body):
-        self.var = var
-        self.iterable = iterable
-        self.body = body
-
-    def dump(self):
-        return f'For({self.var.dump()} in {self.iterable.dump()}) {self.body.dump()}'
-
-
-class Break(ASTNode):
-    def dump(self):
-        return 'Break'
 
 
 class Assign(BinaryOp):
@@ -135,24 +109,9 @@ class Void(types.Any):
     pass
 
 
-class Integer(Value, types.Int):
-    def __init__(self, val):
-        self.val = int(val)
-
-
 class Int8(Value, types.Int8):
     def __init__(self, val):
         self.val = int(val)
-
-
-class Float(Value, types.Float):
-    def __init__(self, val):
-        self.val = float(val)
-
-
-class String(Value, types.String):
-    def __init__(self, val):
-        self.val = val
 
 
 class Var(Value):
@@ -165,122 +124,8 @@ class VarValue(Value):
         self.val = val
 
 
-class List(ASTNode, types.Vector):
-
-    def __init__(self, items: Iterable[Value]):
-        self._items = items
-
-    @property
-    def items(self):
-        return self._items
-
-    def dump(self):
-        return "[{0}]".format(', '.join([item.dump() for item in self._items]))
-
-
-class IndexOf(ASTNode):
-
-    def dump(self):
-        return f'(position {self.index.val} {self.lst.dump()})'
-
-    def __init__(self, lst: List, index: Integer):
-        self.lst = lst
-        self.index = index
-
-
-class Funktion(ASTNode):
-    def __init__(self, name, params, body, ret_type=None, is_constructor=False):
-        self.name = name
-        self.params = params
-        self.body = body
-        self.ret_type = ret_type
-        self.is_constructor = is_constructor
-
-    def dump(self):
-        args = ','.join([arg.dump() for arg in self.params])
-        ret_type = self.ret_type and f'{self.ret_type} ' or ''
-        # ret_type = self.ret_type and self.ret_type.val.__class__.__name__
-        # ret_type = ret_type and f'{ret_type} ' or ''
-        name = '{0}{1}'.format(self.is_constructor and ':' or '', self.name)
-        return f'({ret_type}{name}({args}) {self.body.dump()})'
-
-
-class Klass(ASTNode):
-    def __init__(self, name, body: Block, parent=None):
-        self.name = name
-        self.body = body
-        self.parent = parent
-        if name != 'Object' and not parent:
-            self.parent = 'Object'
-        self.functions = []
-
-    def dump(self):
-        return f'(class {self.name}{self.body.dump()})'
-
-    def add_function(self, funktion: Funktion):
-        self.functions.append(funktion)
-
-
-class Param(ASTNode):
-    def __init__(self, name, type_):
-        self._name = name
-        self._type = type_
-
-    def dump(self):
-        type_ = self.type and f'::{self.type}' or ''
-        return f'{self.name}{type_}'
-
-    @property
-    def name(self):
-        return self._name.val
-
-    @property
-    def type(self):
-        return self._type
-
-
-class Return(ASTNode):
-    def __init__(self, val):
-        self.val = val
-
-    def dump(self):
-        return f'(Return {self.val.dump()})'
-
-
-class Call(ASTNode):
-
-    def __init__(self, func, args):
-        self.func = func
-
-        if args is None:
-            args = []
-
-        self.args = args
-
-    def dump(self):
-        args = ', '.join([arg.dump() for arg in self.args])
-        return f'{self.func}({args})'
-
-
-class MethodCall(ASTNode):
-
-    def __init__(self, instance, method, args):
-        self.instance = instance
-        self.method = method
-
-        if args is None:
-            args = []
-
-        self.args = args
-
-    def dump(self):
-        args = ', '.join([arg.dump() for arg in self.args])
-        return f'({self.instance}.{self.method} {args})'
-
-
 # noinspection PyMethodMayBeStatic
 class ASTVisitor(InlineTransformer):
-
     def __init__(self):
         self.classes = []
         self.functions = []

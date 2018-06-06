@@ -1,7 +1,8 @@
 from llvmlite import ir
 
-from opal.ast.core import Add, Integer, Mul, Float, String, Print, Comparison, Equals, Unequals, \
+from opal.ast.core import Add, Mul, Print, Comparison, Equals, Unequals, \
     GreaterThan, LessThan, Sub, Div, Arithmetic, BinaryOp, GreaterThanEqual, LessThanEqual
+from opal.ast.types import Integer, Float, String
 from opal.ast import LogicError
 from opal.ast.program import Program, Block
 from tests.helpers import parse
