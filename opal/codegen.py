@@ -272,10 +272,7 @@ class CodeGenerator(Printable):
         else:
             vtable_constant = ir.Constant(vtable_typ.as_pointer(), None)
 
-        fields = [
-            vtable_constant,
-            class_string.gep(INDICES)
-        ]
+        fields = [vtable_constant, class_string.gep(INDICES)]
 
         fields += [ir.Constant(item.type, item.get_reference()) for item in funktions.values()]
 
@@ -283,9 +280,7 @@ class CodeGenerator(Printable):
         vtable.linkage = PRIVATE_LINKAGE
         vtable.unnamed_addr = False
         vtable.global_constant = True
-        vtable.initializer = vtable_typ(
-            fields
-        )
+        vtable.initializer = vtable_typ(fields)
 
         type_ = self.module.context.get_identified_type(name)
 
@@ -293,7 +288,7 @@ class CodeGenerator(Printable):
         elements.insert(0, vtable_typ.as_pointer())
         type_.set_body(*elements)
 
-    def visit_vector(self, vector, index):
+    def vector_get(self, vector, index):
         val = self.call('vector_get', [vector, index])
         val = self.builder.ptrtoint(val, Integer.as_llvm())
         return val

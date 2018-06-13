@@ -11,7 +11,7 @@ class IndexOf(ASTNode):
     def code(self, codegen):
         index = codegen.visit(self.index)
         vector = codegen.visit(self.lst)
-        val = codegen.visit_vector(vector, index)
+        val = codegen.vector_get(vector, index)
         return val
 
     def dump(self):
@@ -92,7 +92,7 @@ class For(ASTNode):
         codegen.position_at_end(body_block)
 
         pos = codegen.load(index)
-        val = codegen.visit_vector(vector, pos)
+        val = codegen.vector_get(vector, pos)
 
         codegen.assign(self.var.val, val, Integer.as_llvm())
 
