@@ -1,7 +1,8 @@
 from llvmlite import ir
 
-from opal.ast.core import Add, Mul, Comparison, Equals, Unequals, \
-    GreaterThan, LessThan, Sub, Div, Arithmetic, BinaryOp, GreaterThanEqual, LessThanEqual
+from opal.ast.core import Int8
+from opal.ast.binop import BinaryOp, Arithmetic, Mul, Div, Add, Sub, Comparison, GreaterThan, GreaterThanEqual, \
+    LessThan, LessThanEqual, Equals, Unequals
 from opal.ast.statements import Print
 from opal.ast.types import Integer, Float, String
 from opal.ast import LogicError
@@ -174,6 +175,15 @@ class TestIntegerNodes:
     def test_can_be_compared(self):
         Integer(1).should.be.equal(Integer(1))
         Integer(1).should_not.be.equal(Integer(2))
+
+
+class TestInt8Nodes:
+    def test_cast_to_int_when_initialized_with_strings(self):
+        v1 = Int8('10')
+        v1.val.should.be.a(int)
+
+    def test_has_a_llvm_representation(self):
+        Int8.as_llvm().should.be.equal(ir.IntType(8))
 
 
 class TestFloatNodes:

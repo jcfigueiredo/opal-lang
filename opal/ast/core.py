@@ -4,95 +4,15 @@
 from lark import InlineTransformer
 from lark.lexer import Token
 
-from opal.ast import ASTNode, Value, LogicError, types
+from opal.ast import Value, types
+from opal.ast.binop import Assign, Mul, Div, Add, Sub, Comparison
 from opal.ast.conditionals import If
-from opal.ast.iterators import IndexOf
-from opal.ast.loops import While, For
+from opal.ast.iterators import IndexOf, While, For
 from opal.ast.program import Program, Block
 from opal.ast.statements import Print
 from opal.ast.terminals import Continue, Break, Return
 from opal.ast.types import Bool, Integer, List, Float, String, Klass, Funktion, Param, Call, MethodCall
 from opal.ast.vars import Var, VarValue
-from opal.plugin import Plugin
-
-
-class BinaryOp(ASTNode, metaclass=Plugin):
-    op = None
-
-    def __init__(self, lhs, rhs):
-        self.lhs = lhs
-        self.rhs = rhs
-
-    def __eq__(self, o):
-        if not isinstance(o, BinaryOp):
-            raise LogicError(f'You can\'t compare a BinaryOp and {o.__class__.__name__}.'
-                             f'\nTokens being compared:\n{self.dump()}\n{o.dump}')
-        # noinspection PyUnresolvedReferences
-        return self.lhs == o.lhs and self.rhs == o.rhs
-
-    def dump(self):
-        left = self.lhs.val if isinstance(self.lhs, Value) else self.lhs.dump()
-        right = self.rhs.val if isinstance(self.rhs, Value) else self.rhs.dump()
-        if isinstance(self.lhs, String):
-            left = f'"{left}"'
-        if isinstance(self.rhs, String):
-            right = f'"{right}"'
-        return f'({self.op} {left} {right})'
-
-
-class Assign(BinaryOp):
-    op = '='
-
-
-class Arithmetic(BinaryOp):
-    pass
-
-
-class Mul(Arithmetic):
-    op = '*'
-
-
-class Div(Arithmetic):
-    op = '/'
-
-
-class Add(Arithmetic):
-    op = '+'
-
-
-class Sub(Arithmetic):
-    op = '-'
-
-
-class Comparison(BinaryOp):
-    pass
-
-
-class GreaterThan(Comparison):
-    op = '>'
-
-
-class GreaterThanEqual(Comparison):
-    op = '>='
-
-
-class LessThan(Comparison):
-    op = '<'
-
-
-class LessThanEqual(Comparison):
-    op = '<='
-
-
-class Equals(Comparison):
-    op = '=='
-
-
-class Unequals(Comparison):
-    op = '!='
-
-
-# noinspection PyAbstractClass
 
 
 class Void(types.Any):

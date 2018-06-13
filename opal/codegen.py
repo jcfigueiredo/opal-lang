@@ -3,16 +3,14 @@ from hashlib import sha3_256
 
 # noinspection PyPackageRequirements
 from llvmlite import ir as ir
-from llvmlite.ir import PointerType
 from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
 from opal import operations as ops
 from opal.ast import ASTNode, Value
-from opal.ast.core import BinaryOp, Assign, ASTVisitor, get_param_type
-from opal.ast.statements import Print
+from opal.ast.core import ASTVisitor, get_param_type
+from opal.ast.binop import BinaryOp, Assign
 from opal.ast.program import Program
 from opal.ast.types import Int8, Any, Bool, Integer, List, Float, String, Klass, Call
-from opal.ast.vars import VarValue
 from opal.parser import parser
 from resources.llvmex import CodegenError
 
@@ -300,29 +298,6 @@ class CodeGenerator(Printable):
         elements = []
         elements.insert(0, vtable_typ.as_pointer())
         type_.set_body(*elements)
-
-    def visit_assign(self, node: Assign):
-        left = self.visit(node.lhs)
-        rhs = node.rhs
-        value = self.visit(rhs)
-
-        name = left.val
-
-        if isinstance(rhs, String):
-            typ = value.type
-        elif isinstance(rhs, List):
-            typ = List.as_llvm().as_pointer()
-        elif isinstance(rhs, Call):
-            typ = self.get_klass_by_name(rhs.func)
-            return self.assign(name, value, typ, is_class=True)
-        elif not isinstance(rhs, Value):
-            value = self.visit(rhs)
-            typ = value.type
-        else:
-            typ = rhs.as_llvm()
-
-        var_address = self.assign(name, value, typ)
-        return var_address
 
     def visit_vector(self, vector, index):
         val = self.call('vector_get', [vector, index])

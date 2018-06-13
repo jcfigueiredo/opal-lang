@@ -1,6 +1,6 @@
 from llvmlite import ir
 
-from opal.ast.core import Add, Sub, Mul, Div, Comparison
+from opal.ast.binop import Mul, Div, Add, Sub, Comparison
 
 
 def int_ops(builder, left, right, node):
