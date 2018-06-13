@@ -101,7 +101,7 @@ class TestPrinting:
         """ % something_complete
 
         ev = OpalEvaluator()
-        ev.evaluate(expr)
+        ev.evaluate(expr, run=False)
 
         global_str_constant = \
             fr'@"str_[0-9a-fA-F]+" = private unnamed_addr constant \[16 x i8\] c"{something_complete}\\00"'
@@ -197,11 +197,13 @@ class TestPrinting:
         expr = f"print(true)"
 
         ev = OpalEvaluator()
-        ev.evaluate(expr)
 
-        codegen = str(ev.codegen)
+        with pipes() as (out, _):
+            ev.evaluate(expr)
 
-        str(codegen).should.contain(CodeGenerator.get_string_name('true'))
+        out = out.read()
+
+        out.should.contain('true')
 
     def test_works_for_both_booleans(self):
         expr = f"""

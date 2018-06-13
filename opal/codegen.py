@@ -8,9 +8,11 @@ from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
 from opal import operations as ops
 from opal.ast import ASTNode, Value
-from opal.ast.core import BinaryOp, Print, Assign, Var, VarValue, ASTVisitor, get_param_type
+from opal.ast.core import BinaryOp, Assign, ASTVisitor, get_param_type
+from opal.ast.statements import Print
 from opal.ast.program import Program
-from opal.ast.types import Int8, Any, Bool, Integer, List, Float, String, Klass, Funktion, Call, MethodCall
+from opal.ast.types import Int8, Any, Bool, Integer, List, Float, String, Klass, Call
+from opal.ast.vars import VarValue
 from opal.parser import parser
 from resources.llvmex import CodegenError
 
@@ -19,7 +21,11 @@ INDICES = [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)]
 PRIVATE_LINKAGE = 'private'
 
 
-class CodeGenerator:
+class Printable(object):
+    pass
+
+
+class CodeGenerator(Printable):
     def __init__(self):
         # TODO: come up with a less naive way of handling the symtab and types
         self.classes = None
@@ -201,13 +207,13 @@ class CodeGenerator:
         :param node: ASTNode
         """
 
+        if self.is_break:
+            return
+
         can_code_gen = hasattr(node, 'code')
         if can_code_gen:
             # noinspection PyUnresolvedReferences
             return node.code(codegen=self)
-
-        if self.is_break:
-            return
 
         method = 'visit_' + type(node).__name__.lower()
 
@@ -218,16 +224,6 @@ class CodeGenerator:
             return self.visit_binop(node)
 
         return getattr(self, method, self.generic_codegen)(node)
-
-    # noinspection PyMethodMayBeStatic
-    # TODO: review this to codegen instead of returning an ASTNode
-    def visit_var(self, node):
-        return Var(node.val)
-
-    # noinspection SpellCheckingInspection
-    def visit_varvalue(self, node):
-        name = self.symtab[node.val]
-        return self.load(name)
 
     # TODO: refactor to create smaller, specific functions
     def generate_classes_metadata(self, klass: Klass):
@@ -304,73 +300,6 @@ class CodeGenerator:
         elements = []
         elements.insert(0, vtable_typ.as_pointer())
         type_.set_body(*elements)
-
-    def visit_print(self, node: Print):
-        val = self.visit(node.val)
-        typ = None
-        if isinstance(node.val, VarValue):
-            typ = self.typetab[node.val.val]
-
-        if isinstance(node.val, String) or isinstance(typ, PointerType):
-            typ = String
-        elif isinstance(node.val, Integer) or val.type is Integer.as_llvm():
-            typ = Integer
-        elif isinstance(node.val, Float) or val.type is Float.as_llvm():
-            typ = Float
-        elif isinstance(node.val, Bool) or val.type is Bool.as_llvm():
-            typ = Bool
-
-        if typ is String:
-            # Cast to a i8* pointer
-            char_ty = val.type.pointee.element
-            str_ptr = self.bitcast(val, char_ty.as_pointer())
-
-            self.call('puts', [str_ptr])
-            return
-
-        if typ is Integer:
-            number = self.alloc_and_store(val, val.type)
-            number_ptr = self.load(number)
-
-            buffer = self.alloc(ir.ArrayType(Int8.as_llvm(), 10))
-
-            buffer_ptr = self.gep(buffer, INDICES, inbounds=True)
-
-            self.call('int_to_string', [number_ptr, buffer_ptr, (self.const(10))])
-
-            self.call('puts', [buffer_ptr])
-            return
-
-        if typ is Float:
-            percent_g = String('%g\n').code(self)
-            percent_g = self.gep(percent_g, INDICES)
-
-            value = percent_g
-            type_ = Int8.as_llvm().as_pointer()
-            percent_g = self.bitcast(value, type_)
-            self.call('printf', [percent_g, val])
-            return
-
-        if typ is Bool:
-            mod = self.module
-            true = self.insert_const_string(mod, 'true')
-            true = self.gep(true, INDICES)
-            false = self.insert_const_string(mod, 'false')
-            false = self.gep(false, INDICES)
-
-            if hasattr(val, 'constant'):
-                if val.constant:
-                    val = true
-                else:
-                    val = false
-            else:
-                val = self.select(val, true, false)
-
-            self.call('printf', [val])
-
-            return
-
-        raise NotImplementedError(f'can\'t print {node.val}')
 
     def visit_assign(self, node: Assign):
         left = self.visit(node.lhs)

@@ -9,8 +9,10 @@ from opal.ast.conditionals import If
 from opal.ast.iterators import IndexOf
 from opal.ast.loops import While, For
 from opal.ast.program import Program, Block
+from opal.ast.statements import Print
 from opal.ast.terminals import Continue, Break, Return
 from opal.ast.types import Bool, Integer, List, Float, String, Klass, Funktion, Param, Call, MethodCall
+from opal.ast.vars import Var, VarValue
 from opal.plugin import Plugin
 
 
@@ -93,18 +95,6 @@ class Unequals(Comparison):
 # noinspection PyAbstractClass
 
 
-class Print(Value, types.Any):
-
-    def __init__(self, expr):
-        self.val = expr
-
-    def __eq__(self, o):
-        return self.val == o.val
-
-    def dump(self):
-        return f'({self.__class__.__name__} {self.val.dump()})'
-
-
 class Void(types.Any):
     pass
 
@@ -112,16 +102,6 @@ class Void(types.Any):
 class Int8(Value, types.Int8):
     def __init__(self, val):
         self.val = int(val)
-
-
-class Var(Value):
-    def __init__(self, val):
-        self.val = val
-
-
-class VarValue(Value):
-    def __init__(self, val):
-        self.val = val
 
 
 # noinspection PyMethodMayBeStatic
