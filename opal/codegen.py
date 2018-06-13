@@ -215,12 +215,6 @@ class CodeGenerator(Printable):
 
         method = 'visit_' + type(node).__name__.lower()
 
-        if isinstance(node, BinaryOp):
-            visit_specific_binop = getattr(self, method, None)
-            if visit_specific_binop:
-                return visit_specific_binop(node)
-            return self.visit_binop(node)
-
         return getattr(self, method, self.generic_codegen)(node)
 
     # TODO: refactor to create smaller, specific functions
