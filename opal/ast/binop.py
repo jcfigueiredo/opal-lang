@@ -1,6 +1,7 @@
 from opal.ast import ASTNode, LogicError, Value
-from opal.ast.types import String, List, Call
+from opal.ast.types import String, List, Call, Integer
 from opal.plugin import Plugin
+from opal import operations as ops
 
 
 class BinaryOp(ASTNode, metaclass=Plugin):
@@ -25,7 +26,21 @@ class BinaryOp(ASTNode, metaclass=Plugin):
         if isinstance(self.rhs, String):
             right = f'"{right}"'
         return f'({self.op} {left} {right})'
-    
+
+    def code(self, codegen):
+
+        left = codegen.visit(self.lhs)
+        right = codegen.visit(self.rhs)
+
+        op = self.op
+
+        if isinstance(self, BinaryOp):
+            if left.type == Integer.as_llvm() and right.type == Integer.as_llvm():
+                return ops.int_ops(codegen.builder, left, right, self)
+            return ops.float_ops(codegen.builder, left, right, self)
+
+        raise NotImplementedError(f'The operation _{op}_ is nor support for Binary Operations.')
+
 
 class Assign(BinaryOp):
     op = '='

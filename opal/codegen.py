@@ -6,11 +6,11 @@ from llvmlite import ir as ir
 from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
 from opal import operations as ops
-from opal.ast import ASTNode, Value
+from opal.ast import ASTNode
+from opal.ast.binop import BinaryOp
 from opal.ast.core import ASTVisitor, get_param_type
-from opal.ast.binop import BinaryOp, Assign
 from opal.ast.program import Program
-from opal.ast.types import Int8, Any, Bool, Integer, List, Float, String, Klass, Call
+from opal.ast.types import Int8, Any, Bool, Integer, List, Float, Klass
 from opal.parser import parser
 from resources.llvmex import CodegenError
 
@@ -303,20 +303,6 @@ class CodeGenerator(Printable):
         val = self.call('vector_get', [vector, index])
         val = self.builder.ptrtoint(val, Integer.as_llvm())
         return val
-
-    def visit_binop(self, node):
-
-        left = self.visit(node.lhs)
-        right = self.visit(node.rhs)
-
-        op = node.op
-
-        if isinstance(node, BinaryOp):
-            if left.type == Integer.as_llvm() and right.type == Integer.as_llvm():
-                return ops.int_ops(self.builder, left, right, node)
-            return ops.float_ops(self.builder, left, right, node)
-
-        raise NotImplementedError(f'The operation _{op}_ is nor support for Binary Operations.')
 
     def cast(self, from_, to):
         if from_.type == Integer.as_llvm() and to is Bool:
