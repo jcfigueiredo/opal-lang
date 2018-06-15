@@ -1,7 +1,8 @@
+from llvmlite import ir
+
 from opal.ast import ASTNode, LogicError, Value
 from opal.ast.types import String, List, Call, Integer
 from opal.plugin import Plugin
-from opal import operations as ops
 
 
 class BinaryOp(ASTNode, metaclass=Plugin):
@@ -28,7 +29,6 @@ class BinaryOp(ASTNode, metaclass=Plugin):
         return f'({self.op} {left} {right})'
 
     def code(self, codegen):
-
         left = codegen.visit(self.lhs)
         right = codegen.visit(self.rhs)
 
@@ -36,8 +36,8 @@ class BinaryOp(ASTNode, metaclass=Plugin):
 
         if isinstance(self, BinaryOp):
             if left.type == Integer.as_llvm() and right.type == Integer.as_llvm():
-                return ops.int_ops(codegen.builder, left, right, self)
-            return ops.float_ops(codegen.builder, left, right, self)
+                return int_ops(codegen.builder, left, right, self)
+            return float_ops(codegen.builder, left, right, self)
 
         raise NotImplementedError(f'The operation _{op}_ is nor support for Binary Operations.')
 
@@ -69,49 +69,98 @@ class Assign(BinaryOp):
         return var_address
 
 
-class Arithmetic(BinaryOp):
-    pass
-
-
-class Mul(Arithmetic):
-    op = '*'
-
-
-class Div(Arithmetic):
-    op = '/'
-
-
-class Add(Arithmetic):
-    op = '+'
-
-
-class Sub(Arithmetic):
-    op = '-'
-
-
 class Comparison(BinaryOp):
     pass
 
 
 class GreaterThan(Comparison):
     op = '>'
+    alias = 'gt'
 
 
 class GreaterThanEqual(Comparison):
     op = '>='
+    alias = 'gte'
 
 
 class LessThan(Comparison):
     op = '<'
+    alias = 'lt'
 
 
 class LessThanEqual(Comparison):
     op = '<='
+    alias = 'lte'
 
 
 class Equals(Comparison):
     op = '=='
+    alias = 'eq'
 
 
 class Unequals(Comparison):
     op = '!='
+    alias = 'neq'
+
+
+class Arithmetic(BinaryOp):
+    pass
+
+
+class Mul(Arithmetic):
+    op = '*'
+    alias = 'mul'
+
+
+class Div(Arithmetic):
+    op = '/'
+    alias = 'div'
+
+
+class Add(Arithmetic):
+    op = '+'
+    alias = 'plus'
+
+
+class Sub(Arithmetic):
+    op = '-'
+    alias = 'plus'
+
+
+# temporary
+def int_ops(builder, left, right, node):
+    op = node.op
+
+    if isinstance(node, Add):
+        return builder.add(left, right, 'addtmp')
+    elif isinstance(node, Sub):
+        return builder.sub(left, right, 'subtmp')
+    elif isinstance(node, Mul):
+        return builder.mul(left, right, 'multmp')
+    elif isinstance(node, Div):
+        return builder.sdiv(left, right, 'divtmp')
+    elif isinstance(node, Comparison):
+        return builder.icmp_signed(op, left, right, 'booltmp')
+
+    # it should never get to this point since grammar doesn't allow for it
+    raise SyntaxError('Unknown operator', op)  # pragma: no cover
+
+
+def float_ops(builder, left, right, node):
+    op = node.op
+
+    if isinstance(node, Add):
+        return builder.fadd(left, right, 'faddtmp')
+    elif isinstance(node, Sub):
+        return builder.fsub(left, right, 'fsubtmp')
+    elif isinstance(node, Mul):
+        return builder.fmul(left, right, 'fmultmp')
+    elif isinstance(node, Div):
+        return builder.udiv(builder.fptosi(left, ir.IntType(64)),
+                            builder.fptosi(right, ir.IntType(64)), 'ffloordivtmp')
+    elif isinstance(node, Comparison):
+        return builder.fcmp_ordered(op, left, right, 'booltmp')
+
+    # it should never get to this point since grammar doesn't allow for it
+    raise SyntaxError('Unknown operator', op)  # pragma: no cover
+

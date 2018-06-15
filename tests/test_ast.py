@@ -1,10 +1,9 @@
 from llvmlite import ir
 
-from opal.ast.core import Int8
-from opal.ast.binop import BinaryOp, Arithmetic, Mul, Div, Add, Sub, Comparison, GreaterThan, GreaterThanEqual, \
-    LessThan, LessThanEqual, Equals, Unequals
+from opal.ast.binop import BinaryOp, GreaterThan, GreaterThanEqual, \
+    LessThan, LessThanEqual, Equals, Unequals, Comparison, Arithmetic, Mul, Div, Add, Sub
 from opal.ast.statements import Print
-from opal.ast.types import Integer, Float, String
+from opal.ast.types import Integer, Float, String, Int8
 from opal.ast import LogicError
 from opal.ast.program import Program, Block
 from tests.helpers import parse

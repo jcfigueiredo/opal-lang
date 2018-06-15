@@ -1,4 +1,4 @@
-from opal.ast.core import ASTVisitor
+from opal.ast.visitor import ASTVisitor
 from opal.ast.binop import Mul, Div, Add, Sub
 from opal.ast.statements import Print
 from opal.ast.types import Integer, Float, String

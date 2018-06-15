@@ -5,6 +5,7 @@ from llvmlite.llvmpy.core import Builder
 
 from opal.ast import Value, ASTNode
 from opal.ast.program import Block
+from opal.ast.terminals import Return
 
 INT = 'Int'
 INDICES = [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)]
@@ -18,10 +19,6 @@ class Any:
         return cls._llvm_type
 
 
-class Int8(Any):
-    _llvm_type = ir.IntType(8)
-
-
 class Integer(Any, Value):
     _llvm_type = ir.IntType(32)
 
@@ -30,6 +27,13 @@ class Integer(Any, Value):
 
     def code(self, codegen):
         return codegen.const(self.val)
+
+
+class Int8(Any, Value):
+    _llvm_type = ir.IntType(8)
+
+    def __init__(self, val):
+        self.val = int(val)
 
 
 class Bool(Any, Value):
@@ -228,7 +232,7 @@ class Call(ASTNode):
         name = f'{func}::init'
         codegen.call(name, [instance])
         return instance
-    
+
 
 class MethodCall(ASTNode):
     def __init__(self, instance, method, args):
@@ -243,7 +247,7 @@ class MethodCall(ASTNode):
     def dump(self):
         args = ', '.join([arg.dump() for arg in self.args])
         return f'({self.instance}.{self.method} {args})'
-    
+
     def code(self, codegen):
         var = self.instance
 
@@ -253,3 +257,18 @@ class MethodCall(ASTNode):
         func = f'{typ.name}::{self.method}'
 
         return codegen.call(func, [instance])
+
+
+type_map = {
+    'Cint32': Integer.as_llvm(),
+    Integer: Integer.as_llvm(),
+}
+
+
+def get_param_type(typ, default=None):
+    if isinstance(typ, Return):
+        typ = typ.val.__class__
+    if typ in type_map:
+        return type_map[typ]
+
+    return default

@@ -1,6 +1,6 @@
 import re
 
-from opal.ast.core import ASTVisitor
+from opal.ast.visitor import ASTVisitor
 from opal.parser import get_parser, parser
 
 

@@ -4,8 +4,7 @@
 from lark import InlineTransformer
 from lark.lexer import Token
 
-from opal.ast import Value, types
-from opal.ast.binop import Assign, Mul, Div, Add, Sub, Comparison
+from opal.ast.binop import Assign, Comparison, Mul, Div, Add, Sub
 from opal.ast.conditionals import If
 from opal.ast.iterators import IndexOf, While, For
 from opal.ast.program import Program, Block
@@ -13,15 +12,6 @@ from opal.ast.statements import Print
 from opal.ast.terminals import Continue, Break, Return
 from opal.ast.types import Bool, Integer, List, Float, String, Klass, Funktion, Param, Call, MethodCall
 from opal.ast.vars import Var, VarValue
-
-
-class Void(types.Any):
-    pass
-
-
-class Int8(Value, types.Int8):
-    def __init__(self, val):
-        self.val = int(val)
 
 
 # noinspection PyMethodMayBeStatic
@@ -184,16 +174,3 @@ class ASTVisitor(InlineTransformer):
         return node(lhs, rhs)
 
 
-type_map = {
-    'Cint32': Integer.as_llvm(),
-    Integer: Integer.as_llvm(),
-}
-
-
-def get_param_type(typ, default=None):
-    if isinstance(typ, Return):
-        typ = typ.val.__class__
-    if typ in type_map:
-        return type_map[typ]
-
-    return default

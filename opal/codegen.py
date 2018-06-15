@@ -5,12 +5,10 @@ from hashlib import sha3_256
 from llvmlite import ir as ir
 from llvmlite.llvmpy.core import Constant, Module, Function, Builder
 
-from opal import operations as ops
 from opal.ast import ASTNode
-from opal.ast.binop import BinaryOp
-from opal.ast.core import ASTVisitor, get_param_type
+from opal.ast.visitor import ASTVisitor
 from opal.ast.program import Program
-from opal.ast.types import Int8, Any, Bool, Integer, List, Float, Klass
+from opal.ast.types import Int8, Any, Bool, Integer, List, Float, Klass, get_param_type
 from opal.parser import parser
 from resources.llvmex import CodegenError
 
