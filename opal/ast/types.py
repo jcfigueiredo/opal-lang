@@ -7,7 +7,6 @@ from opal.ast import Value, ASTNode
 from opal.ast.program import Block
 from opal.ast.terminals import Return
 
-INT = 'Int'
 INDICES = [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)]
 
 
@@ -19,6 +18,7 @@ class Any:
         return cls._llvm_type
 
 
+# noinspection PyMethodMayBeStatic
 class Integer(Any, Value):
     _llvm_type = ir.IntType(32)
 

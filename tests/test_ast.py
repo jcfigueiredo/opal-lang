@@ -251,8 +251,23 @@ class TestComparisonNodes:
         BinaryOp.by('<').should.be.equal(LessThan)
         BinaryOp.by('<=').should.be.equal(LessThanEqual)
 
+    def test_can_be_found_by_its_alias(self):
+        BinaryOp.by_aka('add').should.be.equal(Add)
+        BinaryOp.by_aka('sub').should.be.equal(Sub)
+        BinaryOp.by_aka('mul').should.be.equal(Mul)
+        BinaryOp.by_aka('div').should.be.equal(Div)
+        BinaryOp.by_aka('eq').should.be.equal(Equals)
+        BinaryOp.by_aka('neq').should.be.equal(Unequals)
+        BinaryOp.by_aka('gt').should.be.equal(GreaterThan)
+        BinaryOp.by_aka('gte').should.be.equal(GreaterThanEqual)
+        BinaryOp.by_aka('lt').should.be.equal(LessThan)
+        BinaryOp.by_aka('lte').should.be.equal(LessThanEqual)
+
     def test_handles_unsupported_operations(self):
         BinaryOp.by('@').should.be.equal(None)
+
+    def test_handles_unsupported_aliases(self):
+        BinaryOp.by_aka('foo').should.be.equal(None)
 
 
 class TestArithmeticNodes:

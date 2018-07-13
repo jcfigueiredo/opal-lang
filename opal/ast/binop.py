@@ -7,6 +7,7 @@ from opal.plugin import Plugin
 
 class BinaryOp(ASTNode, metaclass=Plugin):
     op = None
+    alias = None
 
     def __init__(self, lhs, rhs):
         self.lhs = lhs
@@ -29,17 +30,15 @@ class BinaryOp(ASTNode, metaclass=Plugin):
         return f'({self.op} {left} {right})'
 
     def code(self, codegen):
-        left = codegen.visit(self.lhs)
-        right = codegen.visit(self.rhs)
+        lhs = self.lhs
+        rhs = self.rhs
 
-        op = self.op
+        left = codegen.visit(lhs)
+        right = codegen.visit(rhs)
 
-        if isinstance(self, BinaryOp):
-            if left.type == Integer.as_llvm() and right.type == Integer.as_llvm():
-                return int_ops(codegen.builder, left, right, self)
-            return float_ops(codegen.builder, left, right, self)
-
-        raise NotImplementedError(f'The operation _{op}_ is nor support for Binary Operations.')
+        if left.type == Integer.as_llvm() and right.type == Integer.as_llvm():
+            return int_ops(codegen.builder, left, right, self)
+        return float_ops(codegen.builder, left, right, self)
 
 
 class Assign(BinaryOp):
@@ -119,12 +118,12 @@ class Div(Arithmetic):
 
 class Add(Arithmetic):
     op = '+'
-    alias = 'plus'
+    alias = 'add'
 
 
 class Sub(Arithmetic):
     op = '-'
-    alias = 'plus'
+    alias = 'sub'
 
 
 # temporary

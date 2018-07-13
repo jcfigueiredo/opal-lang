@@ -26,3 +26,8 @@ class Plugin(type):
             if klass.op == op:
                 return klass
 
+    def by_aka(cls, alias):
+        for klass in cls.registry:
+            if klass.alias == alias:
+                return klass
+
