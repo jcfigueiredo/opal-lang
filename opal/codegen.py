@@ -177,9 +177,6 @@ class CodeGenerator(Printable):
     def call(self, name, args):
         func = self.module.get_global(name)
 
-        if func is None:
-            raise TypeError('Calling non existing function')
-
         return self.builder.call(func, args)
 
     def const(self, val):
@@ -211,9 +208,9 @@ class CodeGenerator(Printable):
             # noinspection PyUnresolvedReferences
             return node.code(codegen=self)
 
-        method = 'visit_' + type(node).__name__.lower()
+        method = 'visit_' + type(node).__name__.lower() # pragma: no cover
 
-        return getattr(self, method, self.generic_codegen)(node)
+        return getattr(self, method, self.generic_codegen)(node) # pragma: no cover
 
     # TODO: refactor to create smaller, specific functions
     def generate_classes_metadata(self, klass: Klass):
